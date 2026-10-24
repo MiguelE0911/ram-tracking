@@ -1,0 +1,23 @@
+﻿<Application x:Class="RamTracking.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:RamTracking"
+             xmlns:converters="clr-namespace:RamTracking.Converters"
+             xmlns:vm="clr-namespace:RamTracking.ViewModels">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- Estilos base -->
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- Converters -->
+            <converters:BytesToGiBConverter x:Key="BytesToGiBConverter"/>
+            <converters:PercentToColorConverter x:Key="PercentToColorConverter"/>
+            <converters:PercentToStatusTextConverter x:Key="PercentToStatusTextConverter"/>
+            <converters:BoolToMonitorButtonTextConverter x:Key="BoolToMonitorButtonTextConverter"/>
+
+            <!-- ViewModel de diseño para preview -->
+            <vm:DesignTimeViewModel x:Key="DesignViewModel"/>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

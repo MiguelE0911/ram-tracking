@@ -10,6 +10,24 @@
                 <!-- Estilos base -->
             </ResourceDictionary.MergedDictionaries>
 
+            <!-- Paleta de colores - Tema oscuro con verde -->
+            <SolidColorBrush x:Key="PrimaryBrush" Color="#22C55E"/>
+            <SolidColorBrush x:Key="PrimaryHoverBrush" Color="#16A34A"/>
+            <SolidColorBrush x:Key="PrimaryPressedBrush" Color="#15803D"/>
+            <SolidColorBrush x:Key="AccentBrush" Color="#4ADE80"/>
+            <SolidColorBrush x:Key="SuccessBrush" Color="#22C55E"/>
+            <SolidColorBrush x:Key="WarningBrush" Color="#F59E0B"/>
+            <SolidColorBrush x:Key="DangerBrush" Color="#EF4444"/>
+            <SolidColorBrush x:Key="BackgroundBrush" Color="#1F1F1F"/>
+            <SolidColorBrush x:Key="SurfaceBrush" Color="#2A2A2A"/>
+            <SolidColorBrush x:Key="CardBackgroundBrush" Color="#2D2D2D"/>
+            <SolidColorBrush x:Key="CardBorderBrush" Color="#3F3F3F"/>
+            <SolidColorBrush x:Key="BorderBrush" Color="#4A4A4A"/>
+            <SolidColorBrush x:Key="TextPrimaryBrush" Color="#E5E5E5"/>
+            <SolidColorBrush x:Key="TextSecondaryBrush" Color="#B0B0B0"/>
+            <SolidColorBrush x:Key="TextTertiaryBrush" Color="#9CA3AF"/>
+            <SolidColorBrush x:Key="InputBackgroundBrush" Color="#333333"/>
+
             <!-- Converters -->
             <converters:BytesToGiBConverter x:Key="BytesToGiBConverter"/>
             <converters:PercentToColorConverter x:Key="PercentToColorConverter"/>

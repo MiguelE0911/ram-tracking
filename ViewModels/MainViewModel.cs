@@ -1,6 +1,7 @@
 namespace RamTracking.ViewModels;
 
 using System.Collections.ObjectModel;
+using System.Diagnostics.Eventing.Reader;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -89,6 +90,7 @@ public partial class MainViewModel : ObservableObject
     public IRelayCommand ToggleMonitoringCommand { get; }
     public IAsyncRelayCommand GenerateReportCommand { get; }
     public IRelayCommand CopyDiagnosticCommand { get; }
+    public IRelayCommand CheckMemoryTestResultCommand { get; }
 
     public MainViewModel(
         IMemoryService memoryService,
@@ -108,6 +110,7 @@ public partial class MainViewModel : ObservableObject
         ToggleMonitoringCommand = new RelayCommand(ToggleMonitoring);
         GenerateReportCommand = new AsyncRelayCommand<object>(GenerateReportAsync);
         CopyDiagnosticCommand = new RelayCommand(CopyDiagnosticToClipboard);
+        CheckMemoryTestResultCommand = new RelayCommand(CheckMemoryTestResult);
 
         // Suscribirse a eventos del monitor
         _monitorService.SampleReady += OnSampleReady;
@@ -139,7 +142,7 @@ Para ejecutar el Diagnóstico de memoria de Windows:
         {
             Values = new ObservableCollection<ObservablePoint>(),
             Fill = null,
-            Stroke = new SolidColorPaint(SKColors.DodgerBlue) { StrokeThickness = 2 },
+            Stroke = new SolidColorPaint(SKColor.Parse("#22C55E")) { StrokeThickness = 2 },
             GeometrySize = 0,
             LineSmoothness = 0.3,
             Name = "Utilización %"
@@ -156,7 +159,8 @@ Para ejecutar el Diagnóstico de memoria de Windows:
                 MinStep = TimeSpan.FromSeconds(2).TotalDays,
                 LabelsRotation = 0,
                 TextSize = 11,
-                SeparatorsPaint = new SolidColorPaint(SKColors.LightGray) { StrokeThickness = 0.5f },
+                LabelsPaint = new SolidColorPaint(SKColor.Parse("#B0B0B0")),
+                SeparatorsPaint = new SolidColorPaint(SKColor.Parse("#4A4A4A")) { StrokeThickness = 0.5f },
                 SeparatorsAtCenter = false
             }
         };
@@ -169,7 +173,8 @@ Para ejecutar el Diagnóstico de memoria de Windows:
                 MaxLimit = 100,
                 Labeler = value => $"{value:F0}%",
                 TextSize = 11,
-                SeparatorsPaint = new SolidColorPaint(SKColors.LightGray) { StrokeThickness = 0.5f }
+                LabelsPaint = new SolidColorPaint(SKColor.Parse("#B0B0B0")),
+                SeparatorsPaint = new SolidColorPaint(SKColor.Parse("#4A4A4A")) { StrokeThickness = 0.5f }
             }
         };
     }
@@ -342,6 +347,88 @@ Para ejecutar el Diagnóstico de memoria de Windows:
         catch
         {
             // Ignorar errores de portapapeles
+        }
+    }
+
+    private void CheckMemoryTestResult()
+    {
+        try
+        {
+            // Buscar el último evento de MemoryDiagnostics-Results (EventID 1101)
+            string query = "*[System[(EventID=1101) and (Provider[@Name='Microsoft-Windows-MemoryDiagnostics-Results'] or Provider[@Name='MemoryDiagnostics-Results'])]]";
+            var eventLogQuery = new EventLogQuery("System", PathType.LogName, query)
+            {
+                ReverseDirection = true
+            };
+
+            using var reader = new EventLogReader(eventLogQuery);
+            EventRecord? record = reader.ReadEvent();
+
+            if (record == null)
+            {
+                System.Windows.MessageBox.Show(
+                    "No se encontró ningún resultado del diagnóstico de memoria en el Visor de Eventos.\n\n" +
+                    "Asegúrate de haber ejecutado mdsched.exe, completado la prueba y reiniciado el equipo.",
+                    "Sin resultado",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Information);
+                return;
+            }
+
+            string message = record.FormatDescription() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                try
+                {
+                    message = record.ToXml();
+                }
+                catch
+                {
+                    // Ignorar
+                }
+            }
+
+            string lower = message.ToLowerInvariant();
+
+            if (lower.Contains("no errors") || lower.Contains("no error") || lower.Contains("sin errores"))
+            {
+                MemoryTestStatus = "Realizada - Pasa";
+            }
+            else if (lower.Contains("error") || lower.Contains("errors") || lower.Contains("error(s)"))
+            {
+                MemoryTestStatus = "Realizada - Error";
+            }
+            else
+            {
+                MemoryTestStatus = "Realizada - Sin resultado";
+            }
+
+            // Añadir resultado a las observaciones si no está ya presente
+            string timestamp = record.TimeCreated?.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss") ?? DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            string entry = $"[Diagnóstico automático {timestamp}]\n{message}\n\n";
+
+            if (string.IsNullOrWhiteSpace(ManualObservation))
+            {
+                ManualObservation = entry.TrimEnd();
+            }
+            else if (!ManualObservation.Contains("Diagnóstico automático"))
+            {
+                ManualObservation = entry + ManualObservation;
+            }
+
+            System.Windows.MessageBox.Show(
+                $"Resultado detectado automáticamente.\n\nEstado: {MemoryTestStatus}\nFecha: {timestamp}",
+                "Resultado del diagnóstico",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show(
+                $"Error al leer el resultado del diagnóstico:\n{ex.Message}\n\nEs posible que se requieran permisos o que el registro no esté disponible.",
+                "Error",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Error);
         }
     }
 

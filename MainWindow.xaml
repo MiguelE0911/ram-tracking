@@ -161,7 +161,7 @@
         <SolidColorBrush Color="#1F1F1F"/>
     </Window.Background>
 
-    <Grid Margin="18">
+    <Grid Margin="14,12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>    <!-- Header -->
             <RowDefinition Height="Auto"/>    <!-- Tarjetas + Barra utilización -->
@@ -169,8 +169,8 @@
             <RowDefinition Height="Auto"/>    <!-- Botones principales (siempre visibles) -->
         </Grid.RowDefinitions>
 
-        <!-- ===== HEADER ===== -->
-        <Border Grid.Row="0" Style="{StaticResource CardStyle}" Padding="22" Background="{DynamicResource CardBackgroundBrush}">
+        <!-- ===== HEADER (compacto) ===== -->
+        <Border Grid.Row="0" Style="{StaticResource CardStyle}" Padding="14,8" Background="{DynamicResource CardBackgroundBrush}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -180,31 +180,31 @@
 
                 <!-- Logo + Nombre -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Border Width="48" Height="48" CornerRadius="6" Margin="0,0,14,0" Background="{DynamicResource PrimaryBrush}">
-                        <TextBlock Text="🧠" FontSize="26" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <Border Width="32" Height="32" CornerRadius="4" Margin="0,0,10,0" Background="{DynamicResource PrimaryBrush}">
+                        <TextBlock Text="🧠" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                     <StackPanel VerticalAlignment="Center">
-                        <TextBlock Text="Ram Tracking" FontSize="26" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                        <TextBlock Text="Consulta • Monitorea • Diagnostica" FontSize="12" Foreground="{DynamicResource TextTertiaryBrush}"/>
+                        <TextBlock Text="Ram Tracking" FontSize="17" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        <TextBlock Text="Consulta • Monitorea • Diagnostica" FontSize="10" Foreground="{DynamicResource TextTertiaryBrush}"/>
                     </StackPanel>
                 </StackPanel>
 
                 <!-- Info del equipo -->
                 <StackPanel Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding SystemInfo.ComputerName}" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
-                    <TextBlock Text="{Binding SystemInfo.OperatingSystem}" FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}" HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding SystemInfo.ComputerName}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding SystemInfo.OperatingSystem}" FontSize="10" Foreground="{DynamicResource TextTertiaryBrush}" HorizontalAlignment="Center"/>
                 </StackPanel>
 
                 <!-- CPU / Arquitectura -->
                 <StackPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding SystemInfo.Processor}" FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}" TextAlignment="Right"/>
-                    <TextBlock Text="{Binding SystemInfo.Architecture}" FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}" TextAlignment="Right"/>
+                    <TextBlock Text="{Binding SystemInfo.Processor}" FontSize="10" Foreground="{DynamicResource TextTertiaryBrush}" TextAlignment="Right"/>
+                    <TextBlock Text="{Binding SystemInfo.Architecture}" FontSize="10" Foreground="{DynamicResource TextTertiaryBrush}" TextAlignment="Right"/>
                 </StackPanel>
             </Grid>
         </Border>
 
         <!-- ===== TARJETAS DE MEMORIA + BARRA UTILIZACIÓN (Siempre visibles) ===== -->
-        <Grid Grid.Row="1" Margin="0,12,0,0">
+        <Grid Grid.Row="1" Margin="0,10,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
@@ -290,7 +290,7 @@
         </Grid>
 
         <!-- ===== TABCONTROL PRINCIPAL ===== -->
-        <TabControl Grid.Row="2" Margin="0,14,0,0" ItemContainerStyle="{StaticResource TabHeaderStyle}" Background="Transparent" BorderThickness="0">
+        <TabControl Grid.Row="2" Margin="0,10,0,0" ItemContainerStyle="{StaticResource TabHeaderStyle}" Background="Transparent" BorderThickness="0">
             <!-- TAB 1: MONITOR -->
             <TabItem Header="📊 Monitor">
                 <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="0,8,8,8" Margin="0,4,0,0">
@@ -312,7 +312,6 @@
                                 </Grid.RowDefinitions>
 
                                 <TextBlock Grid.Row="0" Text="Historial de utilización (últimas 60 muestras, actualización cada 2s)" Style="{StaticResource SectionHeaderStyle}" Foreground="{DynamicResource TextPrimaryBrush}"/>
-
                                 <!-- LiveCharts CartesianChart -->
                                 <lvc:CartesianChart Grid.Row="1" x:Name="UsageChart" MinHeight="300"
                                                     Series="{Binding ChartSeries}"
@@ -353,6 +352,63 @@
                                         </StackPanel>
                                     </Border>
                                 </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- Ranking de programas por consumo de RAM (tiempo real) -->
+                        <Border Grid.Row="1" Style="{StaticResource CardStyle}" Padding="16" Margin="0,0,0,12" Background="{DynamicResource CardBackgroundBrush}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0" Text="Programas con mayor consumo de RAM (Top 10, actualización cada 2s)" Style="{StaticResource SectionHeaderStyle}" Foreground="{DynamicResource TextPrimaryBrush}"/>
+
+                                <ItemsControl Grid.Row="1" ItemsSource="{Binding TopProcesses}" Margin="0,4,0,0">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Margin="0,3">
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
+
+                                                <Grid Grid.Row="0">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="34"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <TextBlock Grid.Column="0" Text="{Binding Rank, StringFormat='#{0}'}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextTertiaryBrush}" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="4,0,8,0" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Grid.Column="2" Text="{Binding UsedMiB, StringFormat='{}{0:F0} MiB'}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                                                </Grid>
+
+                                                <!-- Barra relativa al programa más consumidor -->
+                                                <Grid Grid.Row="1" Height="6" Margin="34,4,0,0">
+                                                    <Border Background="#3F3F3F" CornerRadius="3" Height="6"/>
+                                                    <Border Background="{DynamicResource PrimaryBrush}" CornerRadius="3" Height="6" HorizontalAlignment="Left">
+                                                        <Border.Width>
+                                                            <MultiBinding Converter="{StaticResource PercentToWidthConverter}">
+                                                                <Binding Path="RelativePercent"/>
+                                                                <Binding Path="ActualWidth" RelativeSource="{RelativeSource AncestorType=Grid}"/>
+                                                            </MultiBinding>
+                                                        </Border.Width>
+                                                    </Border>
+                                                </Grid>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <!-- Mensaje si no hay datos -->
+                                <TextBlock Grid.Row="1"
+                                           Text="Cargando los programas en uso..."
+                                           FontSize="13" Foreground="{DynamicResource TextTertiaryBrush}"
+                                           HorizontalAlignment="Center"
+                                           Visibility="{Binding TopProcesses.Count, Converter={StaticResource CountToVisibilityConverter}}"/>
                             </Grid>
                         </Border>
 
@@ -543,6 +599,10 @@
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,8">
                             <Ellipse Width="8" Height="8" Fill="{DynamicResource PrimaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Text="Top 10 programas que más RAM consumieron durante el monitoreo" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,8">
+                            <Ellipse Width="8" Height="8" Fill="{DynamicResource PrimaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
                             <TextBlock Text="Estado de la prueba de memoria y observaciones" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}"/>
                         </StackPanel>
 
@@ -637,7 +697,7 @@
         </TabControl>
 
         <!-- ===== BOTONES PRINCIPALES (siempre visibles en la parte inferior) ===== -->
-        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,16,0,0">
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,12,0,0">
             <Button Content="{Binding IsMonitoring, Converter={StaticResource BoolToMonitorButtonTextConverter}}"
                     Command="{Binding ToggleMonitoringCommand}"
                     Style="{StaticResource ActionButtonStyle}"

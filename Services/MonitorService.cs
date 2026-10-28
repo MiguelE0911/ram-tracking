@@ -1,12 +1,14 @@
 namespace RamTracking.Services;
 
 using System.Collections;
+using System.Diagnostics;
 using System.Windows.Threading;
 using RamTracking.Models;
 
 /// <summary>
-/// Servicio de monitoreo en tiempo real cada 2 segundos
-/// Mantiene buffer circular de 60 muestras
+/// Servicio de actualización en tiempo real cada 2 segundos.
+/// Tarjetas y Top de programas se actualizan siempre; muestras y estadísticas
+/// de la gráfica solo durante el monitoreo activo. Mantienen buffer circular de 60 muestras.
 /// </summary>
 public class MonitorService : IMonitorService
 {
@@ -15,8 +17,17 @@ public class MonitorService : IMonitorService
     private readonly CircularBuffer<MonitorSample> _samples;
     private bool _isMonitoring;
 
+    // Excluir procesos del sistema que no aportan al diagnóstico
+    private static readonly HashSet<string> ExcludedProcesses = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Idle",
+        "Memory Compression"
+    };
+
     public event Action<MonitorSample>? SampleReady;
     public event Action<double, double, double>? StatsUpdated;
+    public event Action<MemoryInfo>? MemoryInfoReady;
+    public event Action<IReadOnlyList<ProcessMemoryUsage>>? ProcessesReady;
 
     public bool IsMonitoring => _isMonitoring;
 
@@ -24,34 +35,34 @@ public class MonitorService : IMonitorService
     {
         _memoryService = memoryService;
         _samples = new CircularBuffer<MonitorSample>(60);
+
+        // Timer siempre activo: tarjetas y Top de programas se actualizan
+        // independientemente de que el monitoreo esté activo o no
+        _timer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(2)
+        };
+        _timer.Tick += async (_, _) => await CollectSampleAsync();
+        _timer.Start();
+
+        // Primera carga inmediata
+        _ = CollectSampleAsync();
     }
 
     public void Start()
     {
         if (_isMonitoring) return;
-        
-        // Crear timer en el hilo UI actual (lazy initialization)
-        if (_timer == null)
-        {
-            _timer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromSeconds(2)
-            };
-            _timer.Tick += async (_, _) => await CollectSampleAsync();
-        }
 
         _isMonitoring = true;
-        _timer.Start();
-        
-        // Primera muestra inmediata
+
+        // Primera muestra inmediata del monitoreo
         _ = CollectSampleAsync();
     }
 
     public void Stop()
     {
         if (!_isMonitoring) return;
-        
-        _timer?.Stop();
+
         _isMonitoring = false;
     }
 
@@ -66,25 +77,75 @@ public class MonitorService : IMonitorService
         try
         {
             var memoryInfo = await _memoryService.GetMemoryInfoAsync();
-            var sample = new MonitorSample(DateTime.Now, memoryInfo.UsagePercent);
-            
-            _samples.Add(sample);
-            SampleReady?.Invoke(sample);
-            
-            // Calcular estadísticas
-            if (_samples.Count > 0)
+            bool monitoring = _isMonitoring;
+
+            // Muestras y estadísticas solo durante el monitoreo activo
+            if (monitoring)
             {
-                var values = _samples.Select(s => s.UsagePercent).ToArray();
-                double min = values.Min();
-                double max = values.Max();
-                double avg = values.Average();
-                StatsUpdated?.Invoke(Math.Round(min, 1), Math.Round(max, 1), Math.Round(avg, 1));
+                var sample = new MonitorSample(DateTime.Now, memoryInfo.UsagePercent);
+                _samples.Add(sample);
+                SampleReady?.Invoke(sample);
+
+                if (_samples.Count > 0)
+                {
+                    var values = _samples.Select(s => s.UsagePercent).ToArray();
+                    double min = values.Min();
+                    double max = values.Max();
+                    double avg = values.Average();
+                    StatsUpdated?.Invoke(Math.Round(min, 1), Math.Round(max, 1), Math.Round(avg, 1));
+                }
             }
+
+            // Memoria actual: siempre (tarjetas y barra en tiempo real)
+            MemoryInfoReady?.Invoke(memoryInfo);
+
+            // Consumo de RAM por programa (en segundo plano para no bloquear el timer)
+            var processUsage = await Task.Run(CollectProcessUsage);
+            ProcessesReady?.Invoke(processUsage);
         }
         catch
         {
             // Silenciar errores para no bloquear el timer
         }
+    }
+
+    /// <summary>
+    /// Recolecta la memoria de trabajo (WorkingSet) de todos los procesos,
+    /// agrupando todas las instancias por nombre de proceso
+    /// </summary>
+    private static List<ProcessMemoryUsage> CollectProcessUsage()
+    {
+        var byName = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var process in Process.GetProcesses())
+        {
+            try
+            {
+                if (ExcludedProcesses.Contains(process.ProcessName))
+                    continue;
+
+                long workingSet = process.WorkingSet64;
+                if (workingSet > 0)
+                {
+                    double mib = workingSet / (1024.0 * 1024.0);
+                    byName[process.ProcessName] = byName.GetValueOrDefault(process.ProcessName) + mib;
+                }
+            }
+            catch
+            {
+                // Algunos procesos del sistema deniegan el acceso; se ignoran
+            }
+            finally
+            {
+                process.Dispose();
+            }
+        }
+
+        return byName
+            .Where(kv => kv.Value > 1) // Descartar procesos con consumo despreciable (< 1 MiB)
+            .Select(kv => ProcessMemoryUsage.Raw(kv.Key, Math.Round(kv.Value, 1)))
+            .OrderByDescending(p => p.UsedMiB)
+            .ToList();
     }
 }
 

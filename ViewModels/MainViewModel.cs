@@ -36,6 +36,10 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private ObservableCollection<MonitorSample> _samples = new();
 
+    // Top 10 de programas que más RAM están consumiendo (tiempo real)
+    [ObservableProperty]
+    private ObservableCollection<ProcessMemoryUsage> _topProcesses = new();
+
     [ObservableProperty]
     private double _minUsage;
 
@@ -84,6 +88,9 @@ public partial class MainViewModel : ObservableObject
     // Referencia interna a la serie de línea para actualizar valores
     private LineSeries<ObservablePoint>? _lineSeries;
 
+    // Registro por programa: pico de RAM observado y último valor visto (para el reporte final)
+    private readonly Dictionary<string, (double PeakMiB, double LastMiB)> _processMemory = new(StringComparer.OrdinalIgnoreCase);
+
     public IAsyncRelayCommand LoadInitialDataCommand { get; }
     public IRelayCommand StartMonitoringCommand { get; }
     public IRelayCommand StopMonitoringCommand { get; }
@@ -115,6 +122,8 @@ public partial class MainViewModel : ObservableObject
         // Suscribirse a eventos del monitor
         _monitorService.SampleReady += OnSampleReady;
         _monitorService.StatsUpdated += OnStatsUpdated;
+        _monitorService.MemoryInfoReady += OnMemoryInfoReady;
+        _monitorService.ProcessesReady += OnProcessesReady;
 
         // Inicializar gráfica vacía
         InitializeChart();
@@ -224,6 +233,8 @@ Para ejecutar el Diagnóstico de memoria de Windows:
             (_lineSeries.Values as ObservableCollection<ObservablePoint>)?.Clear();
         }
         MinUsage = MaxUsage = AvgUsage = 0;
+        TopProcesses.Clear();
+        _processMemory.Clear();
         
         _monitorService.Start();
         IsMonitoring = true;
@@ -282,6 +293,72 @@ Para ejecutar el Diagnóstico de memoria de Windows:
         });
     }
 
+    private void OnMemoryInfoReady(MemoryInfo memoryInfo)
+    {
+        // Actualiza tarjetas superiores y barra de utilización en tiempo real
+        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+        {
+            CurrentMemory = memoryInfo;
+        });
+    }
+
+    private void OnProcessesReady(IReadOnlyList<ProcessMemoryUsage> processUsage)
+    {
+        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+        {
+            // Registrar picos y último valor visto por programa solo durante el monitoreo activo:
+            // así el reporte refleja únicamente la sesión monitoreada
+            if (IsMonitoring)
+            {
+                foreach (var process in processUsage)
+                {
+                    var (peak, _) = _processMemory.GetValueOrDefault(process.Name);
+                    _processMemory[process.Name] = (Math.Max(peak, process.UsedMiB), process.UsedMiB);
+                }
+            }
+
+            // Refrescar el Top 10 en pantalla (siempre, en tiempo real)
+            var top10 = processUsage
+                .Where(p => p.UsedMiB > 0)
+                .OrderByDescending(p => p.UsedMiB)
+                .Take(10)
+                .ToList();
+
+            double maxMiB = top10.Count > 0 ? top10[0].UsedMiB : 0;
+            var ranked = top10
+                .Select((p, index) => p with
+                {
+                    Rank = index + 1,
+                    PeakMiB = _processMemory.GetValueOrDefault(p.Name).PeakMiB,
+                    RelativePercent = maxMiB > 0 ? Math.Round(p.UsedMiB / maxMiB * 100.0, 1) : 0
+                })
+                .ToList();
+
+            TopProcesses.Clear();
+            foreach (var p in ranked)
+                TopProcesses.Add(p);
+        });
+    }
+
+    /// <summary>
+    /// Top 10 de programas que más RAM consumieron durante el monitoreo (por pico)
+    /// </summary>
+    private List<ProcessMemoryUsage> BuildTopProcessesForReport()
+    {
+        return _processMemory
+            .Where(kv => kv.Value.PeakMiB > 0)
+            .Select(kv => new ProcessMemoryUsage(
+                Name: kv.Key,
+                UsedMiB: Math.Round(kv.Value.LastMiB, 1),
+                PeakMiB: Math.Round(kv.Value.PeakMiB, 1),
+                Rank: 0,
+                RelativePercent: 0))
+            .OrderByDescending(p => p.PeakMiB)
+            .Take(10)
+            .Select((p, index) => p with { Rank = index + 1 })
+            .ToList();
+    }
+
     private async Task GenerateReportAsync(object? parameter)
     {
         var format = parameter?.ToString();
@@ -308,7 +385,8 @@ Para ejecutar el Diagnóstico de memoria de Windows:
                     Modules: Modules.ToList(),
                     MonitorStats: (MinUsage, MaxUsage, AvgUsage),
                     MemoryTestStatus: MemoryTestStatus,
-                    Observations: ManualObservation
+                    Observations: ManualObservation,
+                    TopProcesses: BuildTopProcessesForReport()
                 );
 
                 if (isCsv || dialog.FilterIndex == 2) // CSV

@@ -49,6 +49,19 @@ public class DesignTimeViewModel : MainViewModel
         MaxUsage = 78.9;
         AvgUsage = 58.1;
         IsMonitoring = true;
+
+        // Top de procesos de ejemplo para el preview de diseño
+        TopProcesses.Add(new ProcessMemoryUsage("chrome", 1846.5, 1920.3, 1, 100));
+        TopProcesses.Add(new ProcessMemoryUsage("devenv", 1102.8, 1240.1, 2, 59.7));
+        TopProcesses.Add(new ProcessMemoryUsage("Code", 856.2, 900.0, 3, 46.4));
+        TopProcesses.Add(new ProcessMemoryUsage("dwm", 412.4, 430.0, 4, 22.3));
+        TopProcesses.Add(new ProcessMemoryUsage("Teams", 356.1, 388.2, 5, 19.3));
+        TopProcesses.Add(new ProcessMemoryUsage("OKfileExplorer", 224.7, 240.5, 6, 12.2));
+        TopProcesses.Add(new ProcessMemoryUsage("steam", 200.3, 215.0, 7, 10.8));
+        TopProcesses.Add(new ProcessMemoryUsage("Discord", 145.6, 160.4, 8, 7.9));
+        TopProcesses.Add(new ProcessMemoryUsage("spotify", 122.9, 130.0, 9, 6.7));
+        TopProcesses.Add(new ProcessMemoryUsage("RamTracking", 44.1, 45.0, 10, 2.4));
+
         ManualObservation = "Equipo funcionando correctamente. Uso de RAM dentro de parámetros normales para carga de trabajo típica (navegador + IDE).";
         MemoryTestStatus = "Pendiente";
     }
@@ -69,6 +82,8 @@ public class DesignTimeViewModel : MainViewModel
     {
         public event Action<MonitorSample>? SampleReady;
         public event Action<double, double, double>? StatsUpdated;
+        public event Action<MemoryInfo>? MemoryInfoReady;
+        public event Action<IReadOnlyList<ProcessMemoryUsage>>? ProcessesReady;
         public bool IsMonitoring => false;
         public void Start() { }
         public void Stop() { }

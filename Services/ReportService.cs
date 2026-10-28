@@ -61,6 +61,27 @@ public class ReportService : IReportService
             $"Mínimo:              {data.MonitorStats.Min:F1}%",
             $"Máximo:              {data.MonitorStats.Max:F1}%",
             $"Promedio:            {data.MonitorStats.Avg:F1}%",
+            ""
+        });
+
+        // Top 10 programas con mayor consumo de RAM durante el monitoreo
+        lines.Add("--- PROGRAMAS CON MAYOR CONSUMO DE RAM (TOP 10) ---");
+        if (data.TopProcesses.Count == 0)
+        {
+            lines.Add("(Sin datos de monitoreo)");
+        }
+        else
+        {
+            foreach (var p in data.TopProcesses)
+            {
+                string name = p.Name.Length > 26 ? p.Name[..26] : p.Name;
+                lines.Add($"  {p.Rank,2}. {name,-26}  Pico:      {FormatMiB(p.PeakMiB)}");
+                lines.Add($"      {"",-26}  Al final:  {FormatMiB(p.UsedMiB)}");
+            }
+        }
+
+        lines.AddRange(new[]
+        {
             "",
             "--- PRUEBA DE MEMORIA ---",
             $"Estado:              {data.MemoryTestStatus}",
@@ -124,6 +145,22 @@ public class ReportService : IReportService
         Add("Monitoreo - Mínimo (%)", data.MonitorStats.Min.ToString("F1", EsEs));
         Add("Monitoreo - Máximo (%)", data.MonitorStats.Max.ToString("F1", EsEs));
         Add("Monitoreo - Promedio (%)", data.MonitorStats.Avg.ToString("F1", EsEs));
+
+        // Top 10 programas con mayor consumo de RAM durante el monitoreo
+        if (data.TopProcesses.Count == 0)
+        {
+            Add("Programas con mayor consumo de RAM", "(Sin datos de monitoreo)");
+        }
+        else
+        {
+            foreach (var p in data.TopProcesses)
+            {
+                Add($"Programa {p.Rank} - Nombre", p.Name);
+                Add($"Programa {p.Rank} - Pico de RAM (MiB)", p.PeakMiB.ToString("F1", EsEs));
+                Add($"Programa {p.Rank} - RAM al final del monitoreo (MiB)", p.UsedMiB.ToString("F1", EsEs));
+            }
+        }
+
         Add("Prueba de memoria", data.MemoryTestStatus);
         Add("Observaciones", data.Observations);
 
@@ -132,4 +169,5 @@ public class ReportService : IReportService
 
     private static string FormatGiB(double gib) => gib > 0 ? $"{gib:F2} GiB" : "No disponible";
     private static string FormatSpeed(int mts) => mts > 0 ? $"{mts} MT/s" : "No disponible";
+    private static string FormatMiB(double mib) => mib >= 1024 ? $"{mib / 1024.0:F2} GiB" : $"{mib:F1} MiB";
 }

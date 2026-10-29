@@ -34,6 +34,7 @@ public class DesignTimeViewModel : MainViewModel
         Modules.Clear();
         Modules.Add(new MemoryModule("Bank 0", 16.00, "Samsung", "M378A2G43AB2-CWE", "DDR4", 3200, "12345678", "DIMM"));
         Modules.Add(new MemoryModule("Bank 1", 16.00, "Samsung", "M378A2G43AB2-CWE", "DDR4", 3200, "12345679", "DIMM"));
+        SelectedModule = Modules[0]; // Slot seleccionado para el preview de diseño
 
         Samples.Clear();
         var rand = new Random(42);
@@ -76,6 +77,22 @@ public class DesignTimeViewModel : MainViewModel
     private class DesignModuleService : IModuleService
     {
         public Task<IReadOnlyList<MemoryModule>> GetModulesAsync() => Task.FromResult<IReadOnlyList<MemoryModule>>(Array.Empty<MemoryModule>());
+
+        public Task<MemorySlotDetail?> GetSlotDetailAsync(MemoryModule module) => Task.FromResult<MemorySlotDetail?>(
+            new MemorySlotDetail(
+                module,
+                DeviceLocator: "ChannelA-DIMM0",
+                ArrayDevice: "Physical Memory Array 0",
+                ArrayMaxCapacityGiB: 32.00,
+                SlotsInArray: 2,
+                PerSlotCapacityGiB: 16.00,
+                ArrayErrorCorrection: "Ninguna",
+                ArrayUse: "Memoria del sistema",
+                SupportedType: "DDR4",
+                TypeDetail: "SDRAM (síncrona), sin buffer (unbuffered)",
+                MinVoltage: 1.2,
+                MaxVoltage: 1.35,
+                ConfiguredVoltage: 1.2));
     }
 
     private class DesignMonitorService : IMonitorService

@@ -36,6 +36,14 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private ObservableCollection<MonitorSample> _samples = new();
 
+    // Módulo seleccionado en la tabla de slots (tab Módulos)
+    [ObservableProperty]
+    private MemoryModule? _selectedModule;
+
+    // Detalles del slot seleccionado (capacidad máxima y tipo soportado)
+    [ObservableProperty]
+    private MemorySlotDetail? _slotDetail;
+
     // Top 10 de programas que más RAM están consumiendo (tiempo real)
     [ObservableProperty]
     private ObservableCollection<ProcessMemoryUsage> _topProcesses = new();
@@ -223,6 +231,31 @@ Para ejecutar el Diagnóstico de memoria de Windows:
         UpdateMemoryCards();
     }
 
+    // Contador para descartar respuestas obsoletas cuando el usuario cambia rápido de slot
+    private int _slotDetailRequest;
+
+    partial void OnSelectedModuleChanged(MemoryModule? value)
+    {
+        if (value is null)
+        {
+            SlotDetail = null;
+            return;
+        }
+
+        var request = ++_slotDetailRequest;
+        _ = Task.Run(async () =>
+        {
+            var detail = await _moduleService.GetSlotDetailAsync(value);
+
+            System.Windows.Application.Current.Dispatcher.Invoke(() =>
+            {
+                // Solo aplicar si el usuario no ha seleccionado otro slot mientras tanto
+                if (request == _slotDetailRequest)
+                    SlotDetail = detail;
+            });
+        });
+    }
+
     private void StartMonitoring()
     {
         _monitorService.ClearSamples();
@@ -254,8 +287,7 @@ Para ejecutar el Diagnóstico de memoria de Windows:
             StartMonitoring();
     }
 
-    private void OnSampleReady(MonitorSample sample)
-    {
+    private void OnSampleReady(MonitorSample sample)    {
         System.Windows.Application.Current.Dispatcher.Invoke(() =>
         {
             Samples.Add(sample);

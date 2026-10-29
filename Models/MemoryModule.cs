@@ -12,7 +12,8 @@ public record MemoryModule(
     string MemoryType,          // Tipo: "DDR3", "DDR4", "DDR5", "Desconocido"
     int ConfiguredSpeedMTs,     // Velocidad configurada en MT/s (ej: 3200, 4800, 5600)
     string SerialNumber = "",   // Número de serie (opcional)
-    string FormFactor = ""      // Factor de forma: "DIMM", "SODIMM", etc.
+    string FormFactor = "",     // Factor de forma: "DIMM", "SODIMM", etc.
+    string WmiTag = ""          // Tag de WMI: "Physical Memory 0"
 )
 {
     public static MemoryModule Unknown(string bankLabel) => new(

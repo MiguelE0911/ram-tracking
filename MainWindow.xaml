@@ -17,6 +17,8 @@
     <Window.Resources>
         <conv:PercentToWidthConverter x:Key="PercentToWidthConverter"/>
         <conv:CountToVisibilityConverter x:Key="CountToVisibilityConverter"/>
+        <conv:OptionalGiBConverter x:Key="OptionalGiBConverter"/>
+        <conv:OptionalVoltageConverter x:Key="OptionalVoltageConverter"/>
         
         <!-- Estilos comunes -->
         <Style x:Key="CardStyle" TargetType="Border">
@@ -117,6 +119,115 @@
                                 <Setter Property="Foreground" Value="#6B6B6B"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="DarkComboBoxItemStyle" TargetType="ComboBoxItem">
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="4"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#353535"/>
+                                <!-- Texto siempre visible sobre el resaltado -->
+                                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter Property="Foreground" Value="#FFFFFF"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="#7A7A7A"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ComboBox oscuro: evita texto blanco/negro invisible sobre fondos del tema -->
+        <Style x:Key="DarkComboBoxStyle" TargetType="ComboBox">
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="MaxDropDownHeight" Value="240"/>
+            <Setter Property="ItemContainerStyle" Value="{StaticResource DarkComboBoxItemStyle}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <!-- Fondo/borde clicable con flecha -->
+                            <ToggleButton x:Name="ToggleButton" Focusable="False" ClickMode="Press"
+                                          Background="{DynamicResource InputBackgroundBrush}"
+                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border x:Name="border"
+                                                Background="{TemplateBinding Background}"
+                                                BorderBrush="{DynamicResource BorderBrush}"
+                                                BorderThickness="1"
+                                                CornerRadius="6"
+                                                SnapsToDevicePixels="True">
+                                            <Path HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                  Margin="0,0,10,0"
+                                                  Data="M 0 0 L 4 4 L 8 0 Z"
+                                                  Fill="{DynamicResource TextSecondaryBrush}"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+
+                            <!-- Texto del ítem seleccionado (siempre en color del tema) -->
+                            <ContentPresenter x:Name="ContentSite"
+                                              IsHitTestVisible="False"
+                                              Content="{TemplateBinding SelectionBoxItem}"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                              ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                              Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="Left"
+                                              VerticalAlignment="Center"/>
+
+                            <!-- Popup con fondo oscuro sólido -->
+                            <Popup x:Name="Popup"
+                                   IsOpen="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                   Placement="Bottom"
+                                   AllowsTransparency="True"
+                                   Focusable="False"
+                                   PopupAnimation="Fade">
+                                <Grid MinWidth="{TemplateBinding MinWidth}" MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                                    <Border Background="{DynamicResource CardBackgroundBrush}"
+                                            BorderBrush="{DynamicResource BorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="6"
+                                            Padding="4"
+                                            SnapsToDevicePixels="True"/>
+                                    <ScrollViewer Margin="4" SnapsToDevicePixels="True">
+                                        <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained"/>
+                                    </ScrollViewer>
+                                </Grid>
+                            </Popup>
+                        </Grid>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -425,16 +536,19 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <TextBlock Grid.Row="0" Text="Módulos de memoria física detectados (vía SMBIOS/WMI)" Style="{StaticResource SectionHeaderStyle}" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        <TextBlock Grid.Row="0" Text="Módulos de memoria física detectados (vía SMBIOS/WMI) — haga clic en un slot para ver sus detalles" Style="{StaticResource SectionHeaderStyle}" Foreground="{DynamicResource TextPrimaryBrush}"/>
 
                         <DataGrid Grid.Row="1" 
                                   ItemsSource="{Binding Modules}" 
+                                  SelectedItem="{Binding SelectedModule}"
                                   AutoGenerateColumns="False"
                                   CanUserAddRows="False"
                                   CanUserDeleteRows="False"
                                   CanUserResizeRows="False"
+                                  SelectionMode="Single"
                                   HeadersVisibility="Column"
                                   RowHeaderWidth="0"
                                   IsReadOnly="True"
@@ -499,6 +613,80 @@
                                    FontSize="14" Foreground="{DynamicResource TextTertiaryBrush}" 
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                    Visibility="{Binding Modules.Count, Converter={StaticResource CountToVisibilityConverter}}"/>
+
+                        <!-- Panel de detalles del slot seleccionado -->
+                        <Border Grid.Row="2" Margin="0,12,0,0" Padding="16,12" CornerRadius="8"
+                                Background="{DynamicResource CardBackgroundBrush}"
+                                BorderBrush="{DynamicResource CardBorderBrush}"
+                                BorderThickness="1">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SelectedModule}" Value="{x:Null}">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="24"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- Encabezado del panel -->
+                                <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3"
+                                           Text="{Binding SelectedModule.BankLabel, StringFormat='Detalles del slot:  {0}'}"
+                                           FontSize="14" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource PrimaryBrush}" Margin="0,0,0,10"/>
+
+                                <!-- Columna izquierda -->
+                                <StackPanel Grid.Row="1" Grid.Column="0">
+                                    <TextBlock Text="Posición física del slot" FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}"/>
+                                    <TextBlock Text="{Binding SlotDetail.DeviceLocator, TargetNullValue=No disponible}" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+
+                                    <TextBlock Text="Capacidad máxima del banco" FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}" Margin="0,10,0,0"/>
+                                    <TextBlock Text="{Binding SlotDetail.ArrayMaxCapacityGiB, Converter={StaticResource OptionalGiBConverter}}" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0"/>
+                                    <TextBlock Text="Capacidad máxima total de todos los slots del banco (SMBIOS)" FontSize="10" Foreground="{DynamicResource TextTertiaryBrush}" Margin="0,1,0,0" TextWrapping="Wrap"/>
+
+                                    <TextBlock Text="Capacidad máxima estimada por slot" FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}" Margin="0,10,0,0"/>
+                                    <TextBlock Text="{Binding SlotDetail.PerSlotCapacityGiB, Converter={StaticResource OptionalGiBConverter}}" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0"/>
+                                    <TextBlock Text="{Binding SlotDetail.SlotsInArray, StringFormat='{}{0} slots del banco con módulo instalado'}" FontSize="10" Foreground="{DynamicResource TextTertiaryBrush}" Margin="0,1,0,0" TextWrapping="Wrap"/>
+
+                                    <TextBlock Text="Voltaje de operación" FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}" Margin="0,10,0,0"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                        <TextBlock Text="{Binding SlotDetail.MinVoltage, Converter={StaticResource OptionalVoltageConverter}}" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                        <TextBlock Text=" – " FontSize="13" Foreground="{DynamicResource TextTertiaryBrush}"/>
+                                        <TextBlock Text="{Binding SlotDetail.MaxVoltage, Converter={StaticResource OptionalVoltageConverter}}" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,1,0,0">
+                                        <TextBlock Text="Configurado: " FontSize="10" Foreground="{DynamicResource TextTertiaryBrush}"/>
+                                        <TextBlock Text="{Binding SlotDetail.ConfiguredVoltage, Converter={StaticResource OptionalVoltageConverter}}" FontSize="10" Foreground="{DynamicResource TextTertiaryBrush}"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- Columna derecha -->
+                                <StackPanel Grid.Row="1" Grid.Column="2">
+                                    <TextBlock Text="Tipo de RAM soportado por el slot" FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}"/>
+                                    <TextBlock Text="{Binding SlotDetail.SupportedType, TargetNullValue=No disponible}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0"/>
+                                    <TextBlock Text="(según el módulo instalado; el slot solo admite esa generación)" FontSize="10" Foreground="{DynamicResource TextTertiaryBrush}" Margin="0,1,0,0" TextWrapping="Wrap"/>
+
+                                    <TextBlock Text="Detalles del tipo de memoria" FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}" Margin="0,10,0,0"/>
+                                    <TextBlock Text="{Binding SlotDetail.TypeDetail, TargetNullValue=No disponible}" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0" TextWrapping="Wrap"/>
+
+                                    <TextBlock Text="Corrección de errores del banco" FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}" Margin="0,10,0,0"/>
+                                    <TextBlock Text="{Binding SlotDetail.ArrayErrorCorrection, TargetNullValue=No disponible}" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0"/>
+
+                                    <TextBlock Text="Uso del banco" FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}" Margin="0,10,0,0"/>
+                                    <TextBlock Text="{Binding SlotDetail.ArrayUse, TargetNullValue=No disponible}" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
                     </Grid>
                 </Border>
             </TabItem>
@@ -539,27 +727,8 @@
                                 <TextBlock Text="Estado de la prueba de memoria:" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                                 <ComboBox ItemsSource="{Binding MemoryTestStatusOptions}"
                                           SelectedItem="{Binding MemoryTestStatus}"
-                                          Width="220" Margin="12,0,0,0" Padding="8,4"
-                                          FontSize="13" VerticalAlignment="Center"
-                                          Background="{DynamicResource InputBackgroundBrush}"
-                                          Foreground="{DynamicResource TextPrimaryBrush}"
-                                          BorderBrush="{DynamicResource BorderBrush}">
-                                    <ComboBox.ItemContainerStyle>
-                                        <Style TargetType="ComboBoxItem">
-                                            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
-                                            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-                                            <Style.Triggers>
-                                                <Trigger Property="IsHighlighted" Value="True">
-                                                    <Setter Property="Background" Value="#353535"/>
-                                                </Trigger>
-                                                <Trigger Property="IsSelected" Value="True">
-                                                    <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
-                                                    <Setter Property="Foreground" Value="#FFFFFF"/>
-                                                </Trigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </ComboBox.ItemContainerStyle>
-                                </ComboBox>
+                                          Width="220" Margin="12,0,0,0" VerticalAlignment="Center"
+                                          Style="{StaticResource DarkComboBoxStyle}"/>
                                 <Button Content="🔍 Detectar resultado automáticamente" 
                                         Command="{Binding CheckMemoryTestResultCommand}"
                                         Style="{StaticResource SecondaryButtonStyle}"

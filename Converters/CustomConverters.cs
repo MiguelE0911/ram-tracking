@@ -42,3 +42,27 @@ public class CountToVisibilityConverter : IValueConverter
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         => throw new NotImplementedException();
 }
+
+/// <summary>
+/// Convierte una capacidad en GiB a texto; 0 = "No disponible"
+/// </summary>
+public class OptionalGiBConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        => value is double gib && gib > 0 ? $"{gib:F2} GiB" : "No disponible";
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => throw new NotImplementedException();
+}
+
+/// <summary>
+/// Convierte un voltaje (V, double) a texto; 0 = "No disponible"
+/// </summary>
+public class OptionalVoltageConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        => value is double volts && volts > 0 ? $"{volts:F2} V" : "No disponible";
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => throw new NotImplementedException();
+}

@@ -634,11 +634,24 @@ Para ejecutar el Diagnóstico de memoria de Windows:
         try
         {
             var htmlContent = GenerateHtmlReportContent();
-            System.Windows.MessageBox.Show(
-                "Reporte HTML generado (vista previa)",
-                "Reporte generado",
-                System.Windows.MessageBoxButton.OK,
-                System.Windows.MessageBoxImage.Information);
+
+            var dialog = new SaveFileDialog
+            {
+                Title = "Guardar reporte HTML",
+                Filter = "Archivo HTML (*.html)|*.html|Todos los archivos (*.*)|*.*",
+                DefaultExt = "html",
+                FileName = $"RamTracking_Report_{DateTime.Now:yyyyMMdd_HHmmss}.html"
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                await System.IO.File.WriteAllTextAsync(dialog.FileName, htmlContent);
+                System.Windows.MessageBox.Show(
+                    $"Reporte HTML guardado exitosamente en:\n{dialog.FileName}",
+                    "Reporte generado",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Information);
+            }
         }
         catch (Exception ex)
         {

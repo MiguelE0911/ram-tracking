@@ -815,6 +815,15 @@
                                 </StackPanel>
                             </Grid>
                         </Border>
+                        
+                        <!-- Botón generar reporte HTML -->
+                        <Border Grid.Row="3" Margin="0,8,0,0" Padding="12" CornerRadius="4"
+                                Background="{DynamicResource SurfaceBrush}" HorizontalAlignment="Center">
+                            <Button Content="Generar HTML" 
+                                    Command="{Binding GenerateHtmlReportCommand}"
+                                    FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}"
+                                    Margin="4"/>
+                        </Border>
                     </Grid>
                 </Border>
                 </Grid>

@@ -816,14 +816,6 @@
                             </Grid>
                         </Border>
                         
-                        <!-- Botón generar reporte HTML -->
-                        <Border Grid.Row="3" Margin="0,8,0,0" Padding="12" CornerRadius="4"
-                                Background="{DynamicResource SurfaceBrush}" HorizontalAlignment="Center">
-                            <Button Content="Generar HTML" 
-                                    Command="{Binding GenerateHtmlReportCommand}"
-                                    FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}"
-                                    Margin="4"/>
-                        </Border>
                     </Grid>
                 </Border>
                 </Grid>
@@ -930,6 +922,11 @@
 
                         <TextBlock Text="Se abrirá un diálogo para elegir ubicación y nombre del archivo." 
                                    FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}" Margin="0,16,0,0" TextAlignment="Center" TextWrapping="Wrap"/>
+                    <Button Content="Generar HTML"
+                            Command="{Binding GenerateHtmlReportCommand}"
+                            Style="{StaticResource ActionButtonStyle}"
+                            MinWidth="220" Height="52"
+                            FontSize="15"/>
                     </StackPanel>
                 </Border>
                 </Grid>

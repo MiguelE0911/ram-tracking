@@ -67,8 +67,9 @@ public class ModuleService : IModuleService
                 : MapMemoryType(legacyTypeCode);
             string formFactor = MapFormFactor(formFactorCode);
             
-            // Speed en WMI está en MHz (frecuencia base), DDR = x2 para MT/s
-            int speedMTs = speedMHz > 0 ? speedMHz * 2 : 0;
+            // Speed en WMI ya está en MT/s (no hace falta x2)
+            int configuredClockSpeed = Convert.ToInt32(obj["ConfiguredClockSpeed"] ?? 0);
+            int speedMTs = speedMHz > 0 ? speedMHz : 0;
 
             if (capacityGib > 0)
             {
@@ -117,9 +118,9 @@ public class ModuleService : IModuleService
                         supportedType = module.MemoryType;
 
                     // --- Bancos físicos de memoria (arreglos) ---
-                    var arrays = new List<(string Tag, double MaxGiB, string Ecc, string Use)>();
+                    var arrays = new List<(string Tag, double MaxGiB, string Ecc, string Use, int MemoryDevices)>();
                     using (var arraySearcher = new ManagementObjectSearcher(
-                        "SELECT * FROM Win32_PhysicalMemoryArray"))
+                        "SELECT Tag, MaxCapacityEx, MemoryDevices, MemoryErrorCorrection, Use FROM Win32_PhysicalMemoryArray"))
                     {
                         foreach (ManagementObject obj in arraySearcher.Get())
                         {
@@ -131,7 +132,8 @@ public class ModuleService : IModuleService
                                 obj["Tag"]?.ToString() ?? "",
                                 Math.Round(maxKb / (1024.0 * 1024.0), 2),   // KB -> GiB
                                 MapErrorCorrection(Convert.ToInt32(obj["MemoryErrorCorrection"] ?? 0)),
-                                MapArrayUse(Convert.ToInt32(obj["Use"] ?? 0))));
+                                MapArrayUse(Convert.ToInt32(obj["Use"] ?? 0)),
+                                Convert.ToInt32(obj["MemoryDevices"] ?? 0)));   // Nuevo: número de dispositivos por array
                         }
                     }
 
@@ -151,17 +153,12 @@ public class ModuleService : IModuleService
 
                     var array = arrays.FirstOrDefault(a => a.Tag == arrayTag);
 
-                    // Slots ocupados del mismo banco (para estimar el máximo por slot)
-                    int slotsInArray = allDeviceIds.Count;
-                    if (arrays.Count > 1)
-                    {
-                        var mapping = GetMemoryToArrayMap();
-                        slotsInArray = mapping.Values.Count(v => v.Equals(arrayTag, StringComparison.OrdinalIgnoreCase));
-                        if (slotsInArray == 0) slotsInArray = allDeviceIds.Count;
-                    }
+                    // Slots totales según SMBIOS (MemoryDevices) vs slots ocupados (módulos instalados)
+                    int totalSlots = array.MemoryDevices > 0 ? array.MemoryDevices : allDeviceIds.Count;
+                    int slotsInArray = totalSlots;
 
-                    double perSlotGiB = array.MaxGiB > 0 && slotsInArray > 0
-                        ? Math.Round(array.MaxGiB / slotsInArray, 2)
+                    double perSlotGiB = array.MaxGiB > 0 && totalSlots > 0
+                        ? Math.Round(array.MaxGiB / totalSlots, 2)
                         : 0;
 
                     return new MemorySlotDetail(
@@ -284,24 +281,32 @@ public class ModuleService : IModuleService
     /// </summary>
     private static string TranslateTypeDetail(int bits)
     {
+        // Tabla CIM para TypeDetail (Win32_PhysicalMemory SMBIOS)
+        // 1 Other, 2 Unknown, 4 Fast-paged, 8 Static column,
+        // 16 Pseudo-static, 32 RAMBus, 64 Synchronous,
+        // 128 CMOS, 256 EDO, 512 Window DRAM,
+        // 1024 Cache DRAM, 2048 Non-volatile,
+        // 4096 Registered, 8192 Unbuffered, 16384 LRDIMM
         if (bits == 0) return "No disponible";
 
         var flags = new List<string>();
-        if ((bits & 1) != 0) flags.Add("Reservado");
-        if ((bits & 2) != 0) flags.Add("Otro");
-        if ((bits & 4) != 0) flags.Add("Desconocido");
-        if ((bits & 8) != 0) flags.Add("Rápida paginada (Fast-paged)");
-        if ((bits & 16) != 0) flags.Add("Columna estática");
-        if ((bits & 32) != 0) flags.Add("Seudoestática");
-        if ((bits & 256) != 0) flags.Add("SDRAM (síncrona)");
-        if ((bits & 512) != 0) flags.Add("CMOS");
-        if ((bits & 1024) != 0) flags.Add("EDO");
-        if ((bits & 2048) != 0) flags.Add("Window DRAM");
-        if ((bits & 4096) != 0) flags.Add("Cache DRAM");
-        if ((bits & 32768) != 0) flags.Add("Con buffer (buffered)");
-        if ((bits & 65536) != 0) flags.Add("Sin buffer (unbuffered)");
+        if ((bits & 1) != 0) flags.Add("Other");
+        if ((bits & 2) != 0) flags.Add("Unknown");
+        if ((bits & 4) != 0) flags.Add("Fast-paged");
+        if ((bits & 8) != 0) flags.Add("Static column");
+        if ((bits & 16) != 0) flags.Add("Pseudo-static");
+        if ((bits & 32) != 0) flags.Add("RAMBus");
+        if ((bits & 64) != 0) flags.Add("Synchronous");
+        if ((bits & 128) != 0) flags.Add("CMOS");
+        if ((bits & 256) != 0) flags.Add("EDO");
+        if ((bits & 512) != 0) flags.Add("Window DRAM");
+        if ((bits & 1024) != 0) flags.Add("Cache DRAM");
+        if ((bits & 2048) != 0) flags.Add("Non-volatile");
+        if ((bits & 4096) != 0) flags.Add("Registered");
+        if ((bits & 8192) != 0) flags.Add("Unbuffered");
+        if ((bits & 16384) != 0) flags.Add("LRDIMM");
 
-        return flags.Count > 0 ? string.Join(", ", flags) : $"Código WMI: {bits}";
+        return flags.Count > 0 ? string.Join(", ", flags) : "No disponible";
     }
 
     private static string MapErrorCorrection(int code) => code switch
@@ -334,12 +339,18 @@ public class ModuleService : IModuleService
     {
         return typeCode switch
         {
-            20 => "DDR",
-            21 => "DDR2",
-            22 => "DDR2 FB-DIMM",
-            24 => "DDR3",
-            26 => "DDR4",
-            34 => "DDR5",
+            16 => "DDR",
+            17 => "DDR2",
+            18 => "DDR2 FB-DIMM",
+            19 => "DDR3",
+            20 => "DDR4",
+            21 => "DDR5",
+            22 => "LPDDR",
+            23 => "LPDDR2",
+            24 => "LPDDR3",
+            27 => "HBM",
+            28 => "HBM2",
+            29 => "HBM3",
             _ => "No disponible"
         };
     }
@@ -349,8 +360,11 @@ public class ModuleService : IModuleService
         return formFactorCode switch
         {
             8 => "DIMM",
+            9 => "TSOP",
+            10 => "RIMM",
+            11 => "SRIMM",
             12 => "SODIMM",
-            13 => "SODIMM",
+            13 => "SRIMM",
             _ => "No disponible"
         };
     }

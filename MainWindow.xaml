@@ -369,13 +369,6 @@
                 <StackPanel Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center">
                     <TextBlock Text="{Binding SystemInfo.ComputerName, Converter={StaticResource NotAvailableTextConverter}}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                     <TextBlock Text="{Binding SystemInfo.OperatingSystem, Converter={StaticResource NotAvailableTextConverter}}" FontSize="10" Foreground="{DynamicResource TextTertiaryBrush}" HorizontalAlignment="Center"/>
-                    <TextBlock Text="{Binding ctrlPressed, Converter={StaticResource NotAvailableTextConverter}, StringFormat='Ctrl presionado: {0}'}" FontSize="10" Foreground="{DynamicResource TextTertiaryBrush}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                </StackPanel>
-
-                <!-- Modo alto contraste -->
-                <StackPanel Grid.Column="3" HorizontalAlignment="Right" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding highContrastMode, Converter={StaticResource NotAvailableTextConverter}, StringFormat='Modo Alto Contraste: {0}'}" FontSize="10" Foreground="{DynamicResource TextTertiaryBrush}" HorizontalAlignment="Right" Margin="0,4,0,0"/>
-                    <TextBlock Text="{Binding quickDiagnosticText, Converter={StaticResource NotAvailableTextConverter}, StringFormat='Diagnóstico: {0}'}" FontSize="10" Foreground="{DynamicResource TextTertiaryBrush}" HorizontalAlignment="Right" Margin="0,20,0,0"/>
                 </StackPanel>
 
                 <!-- CPU / Arquitectura -->
@@ -676,10 +669,71 @@
 
                         <TextBlock Grid.Row="0" Text="Módulos de memoria física detectados (vía SMBIOS/WMI) — haga clic en un slot para ver sus detalles" Style="{StaticResource SectionHeaderStyle}" Foreground="{DynamicResource TextPrimaryBrush}"/>
 
-                        <!-- SlotMap de módulos -->
-                        <controls:SlotMap Grid.Row="1"
-                                          ItemsSource="{Binding Modules}"
-                                          SelectedModule="{Binding SelectedModule}"/>
+                        <DataGrid Grid.Row="1" 
+                                  ItemsSource="{Binding Modules}" 
+                                  SelectedItem="{Binding SelectedModule}"
+                                  AutoGenerateColumns="False"
+                                  CanUserAddRows="False"
+                                  CanUserDeleteRows="False"
+                                  CanUserResizeRows="False"
+                                  SelectionMode="Single"
+                                  HeadersVisibility="Column"
+                                  RowHeaderWidth="0"
+                                  IsReadOnly="True"
+                                  GridLinesVisibility="Horizontal"
+                                  HorizontalGridLinesBrush="{DynamicResource BorderBrush}"
+                                  FontSize="13"
+                                  AlternatingRowBackground="#333333"
+                                  RowBackground="{DynamicResource CardBackgroundBrush}"
+                                  Background="{DynamicResource CardBackgroundBrush}"
+                                  Foreground="{DynamicResource TextPrimaryBrush}"
+                                  BorderBrush="{DynamicResource CardBorderBrush}"
+                                  ColumnHeaderHeight="32">
+                            <DataGrid.ColumnHeaderStyle>
+                                <Style TargetType="DataGridColumnHeader">
+                                    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                                    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                                    <Setter Property="BorderThickness" Value="0,0,1,1"/>
+                                    <Setter Property="Padding" Value="8,4"/>
+                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                </Style>
+                            </DataGrid.ColumnHeaderStyle>
+                            <DataGrid.CellStyle>
+                                <Style TargetType="DataGridCell">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                    <Style.Triggers>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter Property="Background" Value="#353535"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGrid.CellStyle>
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="🏷 Bank / Slot" Binding="{Binding BankDisplay}" Width="Auto" MinWidth="120"/>
+                                <DataGridTextColumn Header="💾 Capacidad" Binding="{Binding CapacityDisplay}" Width="Auto" MinWidth="110"/>
+                                <DataGridTextColumn Header="🏭 Fabricante" Binding="{Binding ManufacturerDisplay}" Width="Auto" MinWidth="140"/>
+                                <DataGridTextColumn Header="🔢 Número de parte" Binding="{Binding PartNumberDisplay}" Width="Auto" MinWidth="180"/>
+                                <DataGridTextColumn Header="📦 Tipo" Binding="{Binding MemoryTypeDisplay}" Width="Auto" MinWidth="80"/>
+                                <DataGridTextColumn Header="⚡ Velocidad" Binding="{Binding SpeedDisplay}" Width="Auto" MinWidth="110"/>
+                                <DataGridTextColumn Header="🔖 Serie" Binding="{Binding SerialDisplay}" Width="Auto" MinWidth="120"/>
+                                <DataGridTextColumn Header="📐 Factor forma" Binding="{Binding FormFactorDisplay}" Width="Auto" MinWidth="100"/>
+                            </DataGrid.Columns>
+                            <DataGrid.RowStyle>
+                                <Style TargetType="DataGridRow">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HasValidData}" Value="False">
+                                            <Setter Property="Background" Value="#4A3A2A"/>
+                                            <Setter Property="Foreground" Value="#F59E0B"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGrid.RowStyle>
+                        </DataGrid>
 
                         <!-- Mensaje si no hay módulos -->
                         <TextBlock Grid.Row="1" 

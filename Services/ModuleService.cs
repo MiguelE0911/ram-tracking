@@ -67,9 +67,8 @@ public class ModuleService : IModuleService
                 : MapMemoryType(legacyTypeCode);
             string formFactor = MapFormFactor(formFactorCode);
             
-            // Speed en WMI ya está en MT/s (no hace falta x2)
-            int configuredClockSpeed = Convert.ToInt32(obj["ConfiguredClockSpeed"] ?? 0);
-            int speedMTs = speedMHz > 0 ? speedMHz : 0;
+            // Speed en WMI está en MHz (frecuencia base), DDR = x2 para MT/s
+            int speedMTs = speedMHz > 0 ? speedMHz * 2 : 0;
 
             if (capacityGib > 0)
             {

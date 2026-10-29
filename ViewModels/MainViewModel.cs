@@ -64,6 +64,10 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private int _selectedSectionIndex;
 
+// Fase 3: Estado de la tecla Ctrl para atajos
+    [ObservableProperty]
+    private bool _ctrlPressed = false;
+
     // Estado del menú hamburguesa lateral (expandido/contraído)
     [ObservableProperty]
     private bool _isMenuExpanded = true;
@@ -110,6 +114,18 @@ public partial class MainViewModel : ObservableObject
         "Realizada - Sin resultado"
     };
 
+    // Fase 3: Modo alto contraste
+    [ObservableProperty]
+    private bool _highContrastMode = false;
+
+    // Fase 3: Texto diagnóstico rápido
+    [ObservableProperty]
+    private string _quickDiagnosticText = "";
+
+    // Fase 3: Pares de módulos para comparación lado a lado
+    [ObservableProperty]
+    private (MemoryModule Left, MemoryModule Right)? _moduleComparison = null;
+
     // Referencia interna a la serie de línea para actualizar valores
     private LineSeries<ObservablePoint>? _lineSeries;
 
@@ -123,6 +139,12 @@ public partial class MainViewModel : ObservableObject
     public IAsyncRelayCommand GenerateReportCommand { get; }
     public IRelayCommand CopyDiagnosticCommand { get; }
     public IRelayCommand CheckMemoryTestResultCommand { get; }
+
+// Fase 3: Nuevos comandos
+    public IRelayCommand ShowSlotMapCommand { get; }
+    public IRelayCommand ToggleHighContrastCommand { get; }
+    public IRelayCommand CompareModulesCommand { get; }
+    public IAsyncRelayCommand GenerateHtmlReportCommand { get; }
 
     public MainViewModel(
         IMemoryService memoryService,
@@ -143,6 +165,11 @@ public partial class MainViewModel : ObservableObject
         GenerateReportCommand = new AsyncRelayCommand<object>(GenerateReportAsync);
         CopyDiagnosticCommand = new RelayCommand(CopyDiagnosticToClipboard);
         CheckMemoryTestResultCommand = new RelayCommand(CheckMemoryTestResult);
+        // Fase 3: Nuevos comandos
+        ShowSlotMapCommand = new RelayCommand(OnShowSlotMap);
+        ToggleHighContrastCommand = new RelayCommand(OnToggleHighContrast);
+        CompareModulesCommand = new RelayCommand(OnCompareModules);
+        GenerateHtmlReportCommand = new AsyncRelayCommand<object>(OnGenerateHtmlReport);
 
         // Suscribirse a eventos del monitor
         _monitorService.SampleReady += OnSampleReady;
@@ -560,6 +587,128 @@ Para ejecutar el Diagnóstico de memoria de Windows:
     }
 
     public void SetMemoryTestStatus(string status) => MemoryTestStatus = status;
+
+// Fase 3: Manejadores de comandos
+    private void OnShowSlotMap()
+    {
+        SelectedSectionIndex = 1;
+    }
+
+    private void OnToggleHighContrast()
+    {
+        HighContrastMode = !HighContrastMode;
+        if (HighContrastMode)
+        {
+            QuickDiagnosticText = "Modo alto contraste activado";
+        }
+        else
+        {
+            QuickDiagnosticText = "Modo alto contraste desactivado";
+        }
+    }
+
+    private void OnCompareModules()
+    {
+        if (SelectedModule is null) return;
+
+        var otherModules = Modules.Where(m => m.BankLabel != SelectedModule.BankLabel).ToList();
+        if (otherModules.Count == 0)
+        {
+            otherModules = Modules.Where(m => m.HasValidData).ToList();
+        }
+
+        if (otherModules.Count > 0)
+        {
+            var secondModule = otherModules.First();
+            ModuleComparison = (SelectedModule, secondModule);
+        }
+        else
+        {
+            ModuleComparison = null;
+            QuickDiagnosticText = "No hay suficientes módulos para comparar";
+        }
+    }
+
+    private async Task OnGenerateHtmlReport(object? parameter)
+    {
+        try
+        {
+            var htmlContent = GenerateHtmlReportContent();
+            System.Windows.MessageBox.Show(
+                "Reporte HTML generado (vista previa)",
+                "Reporte generado",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show(
+                $"Error al generar el reporte HTML:\n{ex.Message}",
+                "Error",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Error);
+        }
+    }
+
+    private string GenerateHtmlReportContent()
+    {
+        // Usar propiedades existentes del viewmodel
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("<!DOCTYPE html>");
+        sb.AppendLine("<html lang='es'>");
+        sb.AppendLine("<head>");
+        sb.AppendLine("<meta charset='UTF-8'>");
+        sb.AppendLine("<meta name='viewport' content='width=device-width, initial-scale=1.0'>");
+        sb.AppendLine("<title>RamTracking - Reporte</title>");
+        sb.AppendLine("<style>");
+        sb.AppendLine("body { font-family: 'Segoe UI', Arial, sans-serif; margin: 20px; background: #f8f9fa; }");
+        sb.AppendLine(".container { max-width: 800px; margin: 0 auto; }");
+        sb.AppendLine("h1 { color: #1f2937; }");
+        sb.AppendLine(".summary { background: white; padding: 15px; border-radius: 8; margin-bottom: 20px; }");
+        sb.AppendLine(".card { background: white; padding: 10px; margin-bottom: 10px; }");
+        sb.AppendLine("</style>");
+        sb.AppendLine("</head>");
+        sb.AppendLine("<body>");
+        sb.AppendLine("<div class='container'>");
+        sb.AppendLine("<h1>📊 RamTracking - Reporte de Diagnóstico</h1>");
+
+        sb.AppendLine("<div class='summary'>");
+        sb.AppendLine("<h2>Resumen del Sistema</h2>");
+        sb.AppendLine("<p><strong>Computadora:</strong> " + SystemInfo.ComputerName + "</p>");
+        sb.AppendLine("<p><strong>Generado:</strong>" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "</p>");
+        sb.AppendLine("<p><strong>Carga de memoria:</strong>" + CurrentMemory.UsagePercent + "%</p>");
+        sb.AppendLine("<p><strong>Memoria total:</strong>" + CurrentMemory.TotalGiB.ToString("F2") + " GiB</p>");
+        sb.AppendLine("<p><strong>Memoria disponible:</strong>" + CurrentMemory.AvailableGiB.ToString("F2") + " GiB</p>");
+        sb.AppendLine("</div>");
+
+        sb.AppendLine("<div class='card'>");
+        sb.AppendLine("<h3>Módulos de Memoria</h3>");
+        sb.AppendLine("<p>Total de módulos: " + Modules.Count + "</p>");
+        sb.AppendLine("</div>");
+
+        sb.AppendLine("<div class='card'>");
+        sb.AppendLine("<h3>Comparación de Módulos</h3>");
+        if (ModuleComparison != null)
+        {
+            sb.AppendLine("<p>Comparando: " + ModuleComparison.Value.Left.BankDisplay + " vs " + ModuleComparison.Value.Right.BankDisplay + "</p>");
+        }
+        else
+        {
+            sb.AppendLine("<p>No hay módulos seleccionados para comparar</p>");
+        }
+        sb.AppendLine("</div>");
+
+        sb.AppendLine("<div class='card'>");
+        sb.AppendLine("<h3>Diagnóstico Rápido</h3>");
+        sb.AppendLine("<p>" + QuickDiagnosticText + "</p>");
+        sb.AppendLine("</div>");
+
+        sb.AppendLine("</div>");
+        sb.AppendLine("</body>");
+        sb.AppendLine("</html>");
+
+        return sb.ToString();
+    }
 }
 
 /// <summary>

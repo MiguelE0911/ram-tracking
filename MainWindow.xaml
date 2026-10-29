@@ -20,6 +20,12 @@
         <conv:CountToVisibilityConverter x:Key="CountToVisibilityConverter"/>
         <conv:OptionalGiBConverter x:Key="OptionalGiBConverter"/>
         <conv:OptionalVoltageConverter x:Key="OptionalVoltageConverter"/>
+        <conv:NotAvailableTextConverter x:Key="NotAvailableTextConverter"/>
+        <conv:SectionVisibilityConverter x:Key="SectionVisibilityConverter"/>
+        <conv:OptionalPercentTextConverter x:Key="OptionalPercentTextConverter"/>
+        <conv:MenuWidthConverter x:Key="MenuWidthConverter"/>
+        <conv:OptionalSlotsConverter x:Key="OptionalSlotsConverter"/>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
         
         <!-- Estilos comunes -->
         <Style x:Key="CardStyle" TargetType="Border">
@@ -55,6 +61,64 @@
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
             <Setter Property="Margin" Value="0,4,0,12"/>
+        </Style>
+
+        <!-- Tarjeta de memoria reutilizable (4 tarjetas superiores) -->
+        <DataTemplate x:Key="MemoryCardTemplate">
+            <StackPanel HorizontalAlignment="Center">
+                <TextBlock Text="{Binding Label}" Style="{StaticResource HeaderTextStyle}" HorizontalAlignment="Center" FontSize="12"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
+                    <TextBlock Text="{Binding DisplayValue}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource ValueTextStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsAvailable}" Value="False">
+                                        <Setter Property="FontSize" Value="15"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource TextTertiaryBrush}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <TextBlock Text="{Binding Unit}" Style="{StaticResource UnitTextStyle}"
+                               Visibility="{Binding IsAvailable, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                </StackPanel>
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- Ítem del menú lateral -->
+        <Style x:Key="MenuItemStyle" TargetType="ListBoxItem">
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+            <Setter Property="Margin" Value="6,2"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="Bd" Background="Transparent" CornerRadius="6" Padding="8,10" SnapsToDevicePixels="True">
+                            <Grid>
+                                <Border x:Name="Indicator" Width="3" Height="18" CornerRadius="1.5"
+                                        Background="{DynamicResource PrimaryBrush}"
+                                        HorizontalAlignment="Left" VerticalAlignment="Center"
+                                        Margin="-8,0,0,0" Visibility="Collapsed"/>
+                                <ContentPresenter VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#3A3A3A"/>
+                                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#26372C"/>
+                                <Setter TargetName="Indicator" Property="Visibility" Value="Visible"/>
+                                <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <Style x:Key="ActionButtonStyle" TargetType="Button">
@@ -234,39 +298,6 @@
             </Setter>
         </Style>
 
-        <Style x:Key="TabHeaderStyle" TargetType="TabItem">
-            <Setter Property="Padding" Value="20,10"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="FontWeight" Value="Medium"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0,0,0,2"/>
-            <Setter Property="BorderBrush" Value="Transparent"/>
-            <Setter Property="Margin" Value="2,0"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="TabItem">
-                        <Border Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                Padding="{TemplateBinding Padding}"
-                                SnapsToDevicePixels="True">
-                            <ContentPresenter ContentSource="Header" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
-                                <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
-                                <Setter Property="FontWeight" Value="SemiBold"/>
-                            </Trigger>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
     </Window.Resources>
 
     <Window.Background>
@@ -277,7 +308,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>    <!-- Header -->
             <RowDefinition Height="Auto"/>    <!-- Tarjetas + Barra utilización -->
-            <RowDefinition Height="*"/>       <!-- TabControl con contenido -->
+            <RowDefinition Height="*"/>       <!-- Menú lateral + contenido de la sección -->
             <RowDefinition Height="Auto"/>    <!-- Botones principales (siempre visibles) -->
         </Grid.RowDefinitions>
 
@@ -286,12 +317,45 @@
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
+                <!-- Botón hamburguesa (esquina superior izquierda) -->
+                <Button Grid.Column="0" x:Name="MenuButton"
+                        Click="MenuButton_Click"
+                        Width="38" Height="38"
+                        Margin="0,0,12,0"
+                        VerticalAlignment="Center"
+                        Cursor="Hand"
+                        ToolTip="Expandir o contraer menú"
+                        AutomationProperties.Name="Expandir o contraer menú">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="bd" Background="Transparent" CornerRadius="6" SnapsToDevicePixels="True">
+                                <Viewbox Width="18" Height="14" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Canvas Width="18" Height="14">
+                                        <Rectangle Canvas.Top="0" Width="18" Height="2" RadiusX="1" RadiusY="1" Fill="{DynamicResource TextPrimaryBrush}"/>
+                                        <Rectangle Canvas.Top="6" Width="18" Height="2" RadiusX="1" RadiusY="1" Fill="{DynamicResource TextPrimaryBrush}"/>
+                                        <Rectangle Canvas.Top="12" Width="18" Height="2" RadiusX="1" RadiusY="1" Fill="{DynamicResource TextPrimaryBrush}"/>
+                                    </Canvas>
+                                </Viewbox>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="bd" Property="Background" Value="#3A3A3A"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="bd" Property="Background" Value="#454545"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+
                 <!-- Logo + Nombre -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                     <Border Width="32" Height="32" CornerRadius="4" Margin="0,0,10,0">
                         <controls:RamEyeLogo HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
@@ -302,15 +366,15 @@
                 </StackPanel>
 
                 <!-- Info del equipo -->
-                <StackPanel Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding SystemInfo.ComputerName}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
-                    <TextBlock Text="{Binding SystemInfo.OperatingSystem}" FontSize="10" Foreground="{DynamicResource TextTertiaryBrush}" HorizontalAlignment="Center"/>
+                <StackPanel Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding SystemInfo.ComputerName, Converter={StaticResource NotAvailableTextConverter}}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding SystemInfo.OperatingSystem, Converter={StaticResource NotAvailableTextConverter}}" FontSize="10" Foreground="{DynamicResource TextTertiaryBrush}" HorizontalAlignment="Center"/>
                 </StackPanel>
 
                 <!-- CPU / Arquitectura -->
-                <StackPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding SystemInfo.Processor}" FontSize="10" Foreground="{DynamicResource TextTertiaryBrush}" TextAlignment="Right"/>
-                    <TextBlock Text="{Binding SystemInfo.Architecture}" FontSize="10" Foreground="{DynamicResource TextTertiaryBrush}" TextAlignment="Right"/>
+                <StackPanel Grid.Column="3" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding SystemInfo.Processor, Converter={StaticResource NotAvailableTextConverter}}" FontSize="10" Foreground="{DynamicResource TextTertiaryBrush}" TextAlignment="Right"/>
+                    <TextBlock Text="{Binding SystemInfo.Architecture, Converter={StaticResource NotAvailableTextConverter}}" FontSize="10" Foreground="{DynamicResource TextTertiaryBrush}" TextAlignment="Right"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -327,40 +391,20 @@
 
             <!-- Tarjetas de memoria (4 columnas) -->
             <Border Grid.Column="0" Style="{StaticResource CardStyle}" Margin="4,0">
-                <StackPanel HorizontalAlignment="Center">
-                    <TextBlock Text="INSTALADA" Style="{StaticResource HeaderTextStyle}" HorizontalAlignment="Center" FontSize="12"/>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
-                        <TextBlock Text="{Binding MemoryCards[0].Value, StringFormat='{}{0:F2}'}" Style="{StaticResource ValueTextStyle}" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                        <TextBlock Text="GiB" Style="{StaticResource UnitTextStyle}"/>
-                    </StackPanel>
-                </StackPanel>
+                <ContentControl Content="{Binding MemoryCards[0]}" ContentTemplate="{StaticResource MemoryCardTemplate}"
+                                HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
             </Border>
             <Border Grid.Column="1" Style="{StaticResource CardStyle}" Margin="4,0">
-                <StackPanel HorizontalAlignment="Center">
-                    <TextBlock Text="UTILIZABLE" Style="{StaticResource HeaderTextStyle}" HorizontalAlignment="Center" FontSize="12"/>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
-                        <TextBlock Text="{Binding MemoryCards[1].Value, StringFormat='{}{0:F2}'}" Style="{StaticResource ValueTextStyle}" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                        <TextBlock Text="GiB" Style="{StaticResource UnitTextStyle}"/>
-                    </StackPanel>
-                </StackPanel>
+                <ContentControl Content="{Binding MemoryCards[1]}" ContentTemplate="{StaticResource MemoryCardTemplate}"
+                                HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
             </Border>
             <Border Grid.Column="2" Style="{StaticResource CardStyle}" Margin="4,0">
-                <StackPanel HorizontalAlignment="Center">
-                    <TextBlock Text="EN USO" Style="{StaticResource HeaderTextStyle}" HorizontalAlignment="Center" FontSize="12"/>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
-                        <TextBlock Text="{Binding MemoryCards[2].Value, StringFormat='{}{0:F2}'}" Style="{StaticResource ValueTextStyle}" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                        <TextBlock Text="GiB" Style="{StaticResource UnitTextStyle}"/>
-                    </StackPanel>
-                </StackPanel>
+                <ContentControl Content="{Binding MemoryCards[2]}" ContentTemplate="{StaticResource MemoryCardTemplate}"
+                                HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
             </Border>
             <Border Grid.Column="3" Style="{StaticResource CardStyle}" Margin="4,0">
-                <StackPanel HorizontalAlignment="Center">
-                    <TextBlock Text="DISPONIBLE" Style="{StaticResource HeaderTextStyle}" HorizontalAlignment="Center" FontSize="12"/>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
-                        <TextBlock Text="{Binding MemoryCards[3].Value, StringFormat='{}{0:F2}'}" Style="{StaticResource ValueTextStyle}" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                        <TextBlock Text="GiB" Style="{StaticResource UnitTextStyle}"/>
-                    </StackPanel>
-                </StackPanel>
+                <ContentControl Content="{Binding MemoryCards[3]}" ContentTemplate="{StaticResource MemoryCardTemplate}"
+                                HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
             </Border>
 
             <!-- Barra de utilización + Semáforo (columna 5) -->
@@ -385,7 +429,7 @@
                                 </MultiBinding>
                             </Border.Width>
                         </Border>
-                        <TextBlock Text="{Binding CurrentMemory.UsagePercent, StringFormat='{}{0:F1}%'}" 
+                        <TextBlock Text="{Binding CurrentMemory.UsagePercent, Converter={StaticResource OptionalPercentTextConverter}}" 
                                    FontSize="13" FontWeight="Bold" Foreground="#FFFFFF" 
                                    VerticalAlignment="Center" HorizontalAlignment="Center"/>
                     </Grid>
@@ -401,10 +445,87 @@
             </Border>
         </Grid>
 
-        <!-- ===== TABCONTROL PRINCIPAL ===== -->
-        <TabControl Grid.Row="2" Margin="0,10,0,0" ItemContainerStyle="{StaticResource TabHeaderStyle}" Background="Transparent" BorderThickness="0">
-            <!-- TAB 1: MONITOR -->
-            <TabItem Header="📊 Monitor">
+        <!-- ===== MENÚ LATERAL + CONTENIDO (sin TabControl) ===== -->
+        <Grid Grid.Row="2" Margin="0,10,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Menú hamburguesa lateral izquierdo (62 px contraído / 210 px expandido) -->
+            <Border x:Name="MenuPanel" Grid.Column="0"
+                    Width="{Binding IsMenuExpanded, Converter={StaticResource MenuWidthConverter}}"
+                    Background="{DynamicResource SurfaceBrush}"
+                    BorderBrush="{DynamicResource CardBorderBrush}"
+                    BorderThickness="1" CornerRadius="8" ClipToBounds="True">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="NAVEGACIÓN" Margin="16,14,8,4" FontSize="10" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextTertiaryBrush}"
+                               Visibility="{Binding IsMenuExpanded, Converter={StaticResource BoolToVisibilityConverter}}"/>
+
+                    <ListBox Grid.Row="1" x:Name="MenuList"
+                             SelectedIndex="{Binding SelectedSectionIndex, Mode=TwoWay}"
+                             SelectionChanged="MenuList_SelectionChanged"
+                             Background="Transparent" BorderThickness="0" Padding="0,4"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             ItemContainerStyle="{StaticResource MenuItemStyle}">
+                        <ListBoxItem ToolTip="Monitor" AutomationProperties.Name="Monitor">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="📊" FontSize="16" Width="24" TextAlignment="Center"/>
+                                <TextBlock Text="Monitor" FontSize="13" Margin="8,0,0,0" VerticalAlignment="Center"
+                                           Visibility="{Binding IsMenuExpanded, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                            </StackPanel>
+                        </ListBoxItem>
+                        <ListBoxItem ToolTip="Módulos" AutomationProperties.Name="Módulos">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🔧" FontSize="16" Width="24" TextAlignment="Center"/>
+                                <TextBlock Text="Módulos" FontSize="13" Margin="8,0,0,0" VerticalAlignment="Center"
+                                           Visibility="{Binding IsMenuExpanded, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                            </StackPanel>
+                        </ListBoxItem>
+                        <ListBoxItem ToolTip="Diagnóstico" AutomationProperties.Name="Diagnóstico">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🔍" FontSize="16" Width="24" TextAlignment="Center"/>
+                                <TextBlock Text="Diagnóstico" FontSize="13" Margin="8,0,0,0" VerticalAlignment="Center"
+                                           Visibility="{Binding IsMenuExpanded, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                            </StackPanel>
+                        </ListBoxItem>
+                        <ListBoxItem ToolTip="Reporte" AutomationProperties.Name="Reporte">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="📄" FontSize="16" Width="24" TextAlignment="Center"/>
+                                <TextBlock Text="Reporte" FontSize="13" Margin="8,0,0,0" VerticalAlignment="Center"
+                                           Visibility="{Binding IsMenuExpanded, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                            </StackPanel>
+                        </ListBoxItem>
+                        <ListBoxItem ToolTip="Acerca de" AutomationProperties.Name="Acerca de">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="ℹ️" FontSize="16" Width="24" TextAlignment="Center"/>
+                                <TextBlock Text="Acerca de" FontSize="13" Margin="8,0,0,0" VerticalAlignment="Center"
+                                           Visibility="{Binding IsMenuExpanded, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                            </StackPanel>
+                        </ListBoxItem>
+                    </ListBox>
+
+                    <TextBlock Grid.Row="2" Text="v1.0" Margin="16,4,8,12" FontSize="10" HorizontalAlignment="Left"
+                               Foreground="{DynamicResource TextTertiaryBrush}"
+                               Visibility="{Binding IsMenuExpanded, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                </Grid>
+            </Border>
+
+            <!-- Contenido de la sección activa -->
+            <Grid x:Name="SectionHost" Grid.Column="1" Margin="10,0,0,0" RenderTransformOrigin="0.5,0.5">
+                <Grid.RenderTransform>
+                    <TranslateTransform/>
+                </Grid.RenderTransform>
+
+                <!-- SECCIÓN 1: MONITOR -->
+                <Grid Visibility="{Binding SelectedSectionIndex, Converter={StaticResource SectionVisibilityConverter}, ConverterParameter=0}">
                 <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="0,8,8,8" Margin="0,4,0,0">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Background="Transparent">
                     <Grid>
@@ -434,6 +555,12 @@
                                                     AnimationsSpeed="0:0:0.2"
                                                     Background="Transparent"/>
 
+                                <!-- Sin muestras de monitoreo -->
+                                <TextBlock Grid.Row="1" Text="No disponible"
+                                           FontSize="14" Foreground="{DynamicResource TextTertiaryBrush}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           Visibility="{Binding Samples.Count, Converter={StaticResource CountToVisibilityConverter}}"/>
+
                                 <!-- Stats min/max/avg -->
                                 <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,12,0,0">
                                     <Border Style="{StaticResource CardStyle}" Padding="16,10" Margin="4" Background="{DynamicResource CardBackgroundBrush}">
@@ -441,7 +568,7 @@
                                             <Ellipse Width="12" Height="12" Fill="#22C55E" VerticalAlignment="Center" Margin="0,0,8,0"/>
                                             <StackPanel>
                                                 <TextBlock Text="MÍNIMO" FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}"/>
-                                                <TextBlock Text="{Binding MinUsage, StringFormat='{}{0:F1}%'}" FontSize="18" FontWeight="Bold" Foreground="#22C55E"/>
+                                                <TextBlock Text="{Binding MinUsage, Converter={StaticResource OptionalPercentTextConverter}}" FontSize="18" FontWeight="Bold" Foreground="#22C55E"/>
                                             </StackPanel>
                                         </StackPanel>
                                     </Border>
@@ -450,7 +577,7 @@
                                             <Ellipse Width="12" Height="12" Fill="#F59E0B" VerticalAlignment="Center" Margin="0,0,8,0"/>
                                             <StackPanel>
                                                 <TextBlock Text="PROMEDIO" FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}"/>
-                                                <TextBlock Text="{Binding AvgUsage, StringFormat='{}{0:F1}%'}" FontSize="18" FontWeight="Bold" Foreground="#F59E0B"/>
+                                                <TextBlock Text="{Binding AvgUsage, Converter={StaticResource OptionalPercentTextConverter}}" FontSize="18" FontWeight="Bold" Foreground="#F59E0B"/>
                                             </StackPanel>
                                         </StackPanel>
                                     </Border>
@@ -459,7 +586,7 @@
                                             <Ellipse Width="12" Height="12" Fill="#EF4444" VerticalAlignment="Center" Margin="0,0,8,0"/>
                                             <StackPanel>
                                                 <TextBlock Text="MÁXIMO" FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}"/>
-                                                <TextBlock Text="{Binding MaxUsage, StringFormat='{}{0:F1}%'}" FontSize="18" FontWeight="Bold" Foreground="#EF4444"/>
+                                                <TextBlock Text="{Binding MaxUsage, Converter={StaticResource OptionalPercentTextConverter}}" FontSize="18" FontWeight="Bold" Foreground="#EF4444"/>
                                             </StackPanel>
                                         </StackPanel>
                                     </Border>
@@ -515,12 +642,12 @@
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
 
-                                <!-- Mensaje si no hay datos -->
-                                <TextBlock Grid.Row="1"
-                                           Text="Cargando los programas en uso..."
-                                           FontSize="13" Foreground="{DynamicResource TextTertiaryBrush}"
-                                           HorizontalAlignment="Center"
-                                           Visibility="{Binding TopProcesses.Count, Converter={StaticResource CountToVisibilityConverter}}"/>
+                                 <!-- Mensaje si no hay datos -->
+                                 <TextBlock Grid.Row="1"
+                                            Text="No disponible"
+                                            FontSize="13" Foreground="{DynamicResource TextTertiaryBrush}"
+                                            HorizontalAlignment="Center"
+                                            Visibility="{Binding TopProcesses.Count, Converter={StaticResource CountToVisibilityConverter}}"/>
                             </Grid>
                         </Border>
 
@@ -528,10 +655,10 @@
                     </Grid>
                 </ScrollViewer>
                 </Border>
-            </TabItem>
+                </Grid>
 
-            <!-- TAB 2: MÓDULOS -->
-            <TabItem Header="🔧 Módulos">
+                <!-- SECCIÓN 2: MÓDULOS -->
+                <Grid Visibility="{Binding SelectedSectionIndex, Converter={StaticResource SectionVisibilityConverter}, ConverterParameter=1}">
                 <Border Style="{StaticResource CardStyle}" Padding="16" Margin="0,4,0,0" Background="{DynamicResource CardBackgroundBrush}">
                     <Grid>
                         <Grid.RowDefinitions>
@@ -586,14 +713,14 @@
                                 </Style>
                             </DataGrid.CellStyle>
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="🏷 Bank / Slot" Binding="{Binding BankLabel}" Width="Auto" MinWidth="120"/>
-                                <DataGridTextColumn Header="💾 Capacidad" Binding="{Binding CapacityGiB, StringFormat='{}{0:F2} GiB'}" Width="Auto" MinWidth="110"/>
-                                <DataGridTextColumn Header="🏭 Fabricante" Binding="{Binding Manufacturer}" Width="Auto" MinWidth="140"/>
-                                <DataGridTextColumn Header="🔢 Número de parte" Binding="{Binding PartNumber}" Width="Auto" MinWidth="180"/>
-                                <DataGridTextColumn Header="📦 Tipo" Binding="{Binding MemoryType}" Width="Auto" MinWidth="80"/>
-                                <DataGridTextColumn Header="⚡ Velocidad" Binding="{Binding ConfiguredSpeedMTs, StringFormat='{}{0} MT/s'}" Width="Auto" MinWidth="110"/>
-                                <DataGridTextColumn Header="🔖 Serie" Binding="{Binding SerialNumber}" Width="Auto" MinWidth="120"/>
-                                <DataGridTextColumn Header="📐 Factor forma" Binding="{Binding FormFactor}" Width="Auto" MinWidth="100"/>
+                                <DataGridTextColumn Header="🏷 Bank / Slot" Binding="{Binding BankDisplay}" Width="Auto" MinWidth="120"/>
+                                <DataGridTextColumn Header="💾 Capacidad" Binding="{Binding CapacityDisplay}" Width="Auto" MinWidth="110"/>
+                                <DataGridTextColumn Header="🏭 Fabricante" Binding="{Binding ManufacturerDisplay}" Width="Auto" MinWidth="140"/>
+                                <DataGridTextColumn Header="🔢 Número de parte" Binding="{Binding PartNumberDisplay}" Width="Auto" MinWidth="180"/>
+                                <DataGridTextColumn Header="📦 Tipo" Binding="{Binding MemoryTypeDisplay}" Width="Auto" MinWidth="80"/>
+                                <DataGridTextColumn Header="⚡ Velocidad" Binding="{Binding SpeedDisplay}" Width="Auto" MinWidth="110"/>
+                                <DataGridTextColumn Header="🔖 Serie" Binding="{Binding SerialDisplay}" Width="Auto" MinWidth="120"/>
+                                <DataGridTextColumn Header="📐 Factor forma" Binding="{Binding FormFactorDisplay}" Width="Auto" MinWidth="100"/>
                             </DataGrid.Columns>
                             <DataGrid.RowStyle>
                                 <Style TargetType="DataGridRow">
@@ -642,22 +769,22 @@
 
                                 <!-- Encabezado del panel -->
                                 <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3"
-                                           Text="{Binding SelectedModule.BankLabel, StringFormat='Detalles del slot:  {0}'}"
+                                           Text="{Binding SelectedModule.BankDisplay, StringFormat='Detalles del slot:  {0}'}"
                                            FontSize="14" FontWeight="SemiBold"
                                            Foreground="{DynamicResource PrimaryBrush}" Margin="0,0,0,10"/>
 
                                 <!-- Columna izquierda -->
                                 <StackPanel Grid.Row="1" Grid.Column="0">
                                     <TextBlock Text="Posición física del slot" FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}"/>
-                                    <TextBlock Text="{Binding SlotDetail.DeviceLocator, TargetNullValue=No disponible}" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Text="{Binding SlotDetail.DeviceLocator, Converter={StaticResource NotAvailableTextConverter}}" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
 
-                                    <TextBlock Text="Capacidad máxima del banco" FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}" Margin="0,10,0,0"/>
+                                    <TextBlock Text="Capacidad máxima total del banco (SMBIOS)" FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}" Margin="0,10,0,0"/>
                                     <TextBlock Text="{Binding SlotDetail.ArrayMaxCapacityGiB, Converter={StaticResource OptionalGiBConverter}}" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0"/>
-                                    <TextBlock Text="Capacidad máxima total de todos los slots del banco (SMBIOS)" FontSize="10" Foreground="{DynamicResource TextTertiaryBrush}" Margin="0,1,0,0" TextWrapping="Wrap"/>
+                                    <TextBlock Text="Suma de todos los slots del banco" FontSize="10" Foreground="{DynamicResource TextTertiaryBrush}" Margin="0,1,0,0" TextWrapping="Wrap"/>
 
-                                    <TextBlock Text="Capacidad máxima estimada por slot" FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}" Margin="0,10,0,0"/>
+                                    <TextBlock Text="Capacidad máxima por slot instalado" FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}" Margin="0,10,0,0"/>
                                     <TextBlock Text="{Binding SlotDetail.PerSlotCapacityGiB, Converter={StaticResource OptionalGiBConverter}}" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0"/>
-                                    <TextBlock Text="{Binding SlotDetail.SlotsInArray, StringFormat='{}{0} slots del banco con módulo instalado'}" FontSize="10" Foreground="{DynamicResource TextTertiaryBrush}" Margin="0,1,0,0" TextWrapping="Wrap"/>
+                                    <TextBlock Text="{Binding SlotDetail.SlotsInArray, Converter={StaticResource OptionalSlotsConverter}}" FontSize="10" Foreground="{DynamicResource TextTertiaryBrush}" Margin="0,1,0,0" TextWrapping="Wrap"/>
 
                                     <TextBlock Text="Voltaje de operación" FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}" Margin="0,10,0,0"/>
                                     <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
@@ -674,26 +801,26 @@
                                 <!-- Columna derecha -->
                                 <StackPanel Grid.Row="1" Grid.Column="2">
                                     <TextBlock Text="Tipo de RAM soportado por el slot" FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}"/>
-                                    <TextBlock Text="{Binding SlotDetail.SupportedType, TargetNullValue=No disponible}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0"/>
+                                    <TextBlock Text="{Binding SlotDetail.SupportedType, Converter={StaticResource NotAvailableTextConverter}}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0"/>
                                     <TextBlock Text="(según el módulo instalado; el slot solo admite esa generación)" FontSize="10" Foreground="{DynamicResource TextTertiaryBrush}" Margin="0,1,0,0" TextWrapping="Wrap"/>
 
                                     <TextBlock Text="Detalles del tipo de memoria" FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}" Margin="0,10,0,0"/>
-                                    <TextBlock Text="{Binding SlotDetail.TypeDetail, TargetNullValue=No disponible}" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                                    <TextBlock Text="{Binding SlotDetail.TypeDetail, Converter={StaticResource NotAvailableTextConverter}}" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0" TextWrapping="Wrap"/>
 
                                     <TextBlock Text="Corrección de errores del banco" FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}" Margin="0,10,0,0"/>
-                                    <TextBlock Text="{Binding SlotDetail.ArrayErrorCorrection, TargetNullValue=No disponible}" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0"/>
+                                    <TextBlock Text="{Binding SlotDetail.ArrayErrorCorrection, Converter={StaticResource NotAvailableTextConverter}}" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0"/>
 
                                     <TextBlock Text="Uso del banco" FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}" Margin="0,10,0,0"/>
-                                    <TextBlock Text="{Binding SlotDetail.ArrayUse, TargetNullValue=No disponible}" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0"/>
+                                    <TextBlock Text="{Binding SlotDetail.ArrayUse, Converter={StaticResource NotAvailableTextConverter}}" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0"/>
                                 </StackPanel>
                             </Grid>
                         </Border>
                     </Grid>
                 </Border>
-            </TabItem>
+                </Grid>
 
-            <!-- TAB 3: DIAGNÓSTICO -->
-            <TabItem Header="🔍 Diagnóstico">
+                <!-- SECCIÓN 3: DIAGNÓSTICO -->
+                <Grid Visibility="{Binding SelectedSectionIndex, Converter={StaticResource SectionVisibilityConverter}, ConverterParameter=2}">
                 <Border Style="{StaticResource CardStyle}" Padding="24" Margin="0,4,0,0" Background="{DynamicResource CardBackgroundBrush}">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel>
@@ -742,10 +869,10 @@
                         </StackPanel>
                     </ScrollViewer>
                 </Border>
-            </TabItem>
+                </Grid>
 
-            <!-- TAB 4: REPORTE -->
-            <TabItem Header="📄 Reporte">
+                <!-- SECCIÓN 4: REPORTE -->
+                <Grid Visibility="{Binding SelectedSectionIndex, Converter={StaticResource SectionVisibilityConverter}, ConverterParameter=3}">
                 <Border Style="{StaticResource CardStyle}" Padding="24" Margin="0,4,0,0" Background="{DynamicResource CardBackgroundBrush}">
                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="500">
                         <TextBlock Text="Generar reporte de diagnóstico" Style="{StaticResource SectionHeaderStyle}" FontSize="18" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
@@ -796,10 +923,10 @@
                                    FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}" Margin="0,16,0,0" TextAlignment="Center" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Border>
-            </TabItem>
+                </Grid>
 
-            <!-- TAB 5: ACERCA DE -->
-            <TabItem Header="ℹ️ Acerca de">
+                <!-- SECCIÓN 5: ACERCA DE -->
+                <Grid Visibility="{Binding SelectedSectionIndex, Converter={StaticResource SectionVisibilityConverter}, ConverterParameter=4}">
                 <Border Style="{StaticResource CardStyle}" Padding="24" Margin="0,4,0,0" Background="{DynamicResource CardBackgroundBrush}">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel MaxWidth="700">
@@ -864,8 +991,9 @@
                         </StackPanel>
                     </ScrollViewer>
                 </Border>
-            </TabItem>
-        </TabControl>
+                </Grid>
+            </Grid>
+        </Grid>
 
         <!-- ===== BOTONES PRINCIPALES (siempre visibles en la parte inferior) ===== -->
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,12,0,0">

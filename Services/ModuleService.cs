@@ -336,14 +336,33 @@ public class ModuleService : IModuleService
 
     private static string MapMemoryType(int typeCode)
     {
+        // Rango WMI (Win32_PhysicalMemory): 20-34
+        //    20=DDR, 21=DDR2, 24=DDR3, 26=DDR4, 34=DDR5
+        // Rango SMBIOS Type 17: 16-29
+        //    16=DDR, 17=DDR2, 18=DDR2 FB-DIMM, 19=DDR3, 22=LPDDR, 23=LPDDR2, 24=LPDDR3, 27=HBM, 28=HBM2, 29=HBM3
+        // Nota: hay solapamiento en 20 y 21; el WMI tiene prioridad ya que es la fuente principal
+
+        // Primero: códigos WMI (20-34 son exclusivamente de WMI)
+        if (typeCode >= 20 && typeCode <= 34)
+        {
+            return typeCode switch
+            {
+                20 => "DDR",
+                21 => "DDR2",
+                24 => "DDR3",
+                26 => "DDR4",
+                34 => "DDR5",
+                _ => "No disponible"
+            };
+        }
+
+        // Luego: códigos SMBIOS Type 17 (16-29, excluyendo 20-21 que ya cubrió WMI)
         return typeCode switch
         {
             16 => "DDR",
             17 => "DDR2",
             18 => "DDR2 FB-DIMM",
             19 => "DDR3",
-            20 => "DDR4",
-            21 => "DDR5",
             22 => "LPDDR",
             23 => "LPDDR2",
             24 => "LPDDR3",

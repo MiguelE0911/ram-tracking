@@ -918,20 +918,12 @@
                                     MinWidth="220" Height="52"
                                     Margin="16,0,0,0"
                                     FontSize="15"/>
-                            <Button Content="Generar HTML"
-                                    Command="{Binding GenerateHtmlReportCommand}"
-                                    Style="{StaticResource ActionButtonStyle}"
-                                    MinWidth="220" Height="52"
-                                    FontSize="15" Margin="16,0,0,0"/>
+                            
                         </StackPanel>
 
                         <TextBlock Text="Se abrirá un diálogo para elegir ubicación y nombre del archivo." 
                                    FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}" Margin="0,16,0,0" TextAlignment="Center" TextWrapping="Wrap"/>
-                    <Button Content="Generar HTML"
-                            Command="{Binding GenerateHtmlReportCommand}"
-                            Style="{StaticResource ActionButtonStyle}"
-                            MinWidth="220" Height="52"
-                            FontSize="15"/>
+                    
                     </StackPanel>
                 </Border>
                 </Grid>

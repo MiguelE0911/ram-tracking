@@ -9,6 +9,7 @@ using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using RamTracking.Models;
 using RamTracking.ViewModels;
 
 namespace RamTracking;
@@ -24,6 +25,20 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        // Vincular el evento del SlotMap al manejador de la ventana
+        var slotMap = (Controls.SlotMap?)FindName("SlotMap");
+        if (slotMap != null)
+        {
+            slotMap.ModuleSelectedChanged += OnModuleSelectedChanged;
+        }
+    }
+
+    /// <summary>
+    /// Manejador del evento de cambio de módulo seleccionado en SlotMap.
+    /// </summary>
+    private void OnModuleSelectedChanged(MemoryModule? module)
+    {
+        // El seleccionado se refleja automáticamente a través de la propiedad SelectedModule
     }
 
     /// <summary>

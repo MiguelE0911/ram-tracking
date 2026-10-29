@@ -12,7 +12,7 @@ public class PercentToColorConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        if (value is double percent)
+        if (value is double percent && percent > 0)
         {
             return percent switch
             {
@@ -35,7 +35,7 @@ public class PercentToStatusTextConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        if (value is double percent)
+        if (value is double percent && percent > 0)
         {
             return percent switch
             {
@@ -44,8 +44,20 @@ public class PercentToStatusTextConverter : IValueConverter
                 _ => "Utilización muy elevada; revisar la carga del equipo."
             };
         }
-        return "Estado desconocido";
+        return "No disponible";
     }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => throw new NotImplementedException();
+}
+
+/// <summary>
+/// Convierte un porcentaje a texto; valores no positivos = "No disponible"
+/// </summary>
+public class OptionalPercentTextConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        => value is double percent && percent > 0 ? $"{percent:F1}%" : "No disponible";
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         => throw new NotImplementedException();

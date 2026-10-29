@@ -75,15 +75,15 @@ public class MemoryService : IMemoryService
             try
             {
                 string computerName = Environment.MachineName;
-                string os = "Desconocido";
-                string processor = "Desconocido";
+                string os = "No disponible";
+                string processor = "No disponible";
                 string architecture = Environment.Is64BitOperatingSystem ? "x64" : "x86";
 
                 // OS info
                 using var osSearcher = new ManagementObjectSearcher("SELECT Caption, Version FROM Win32_OperatingSystem");
                 foreach (ManagementObject obj in osSearcher.Get())
                 {
-                    os = $"{obj["Caption"]} {obj["Version"]}";
+                    os = $"{obj["Caption"]} {obj["Version"]}".Trim();
                     break;
                 }
 
@@ -91,18 +91,22 @@ public class MemoryService : IMemoryService
                 using var cpuSearcher = new ManagementObjectSearcher("SELECT Name FROM Win32_Processor");
                 foreach (ManagementObject obj in cpuSearcher.Get())
                 {
-                    processor = obj["Name"]?.ToString() ?? "Desconocido";
+                    processor = obj["Name"]?.ToString()?.Trim() ?? "No disponible";
                     break;
                 }
 
-                return new SystemInfo(computerName, os, processor, architecture);
+                return new SystemInfo(
+                    string.IsNullOrWhiteSpace(computerName) ? "No disponible" : computerName,
+                    string.IsNullOrWhiteSpace(os) ? "No disponible" : os,
+                    string.IsNullOrWhiteSpace(processor) ? "No disponible" : processor,
+                    architecture);
             }
             catch
             {
                 return new SystemInfo(
-                    Environment.MachineName, 
-                    "Error al obtener info", 
-                    "Error al obtener info", 
+                    string.IsNullOrWhiteSpace(Environment.MachineName) ? "No disponible" : Environment.MachineName,
+                    "No disponible",
+                    "No disponible",
                     Environment.Is64BitOperatingSystem ? "x64" : "x86");
             }
         });

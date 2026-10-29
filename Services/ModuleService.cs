@@ -37,25 +37,34 @@ public class ModuleService : IModuleService
         var modules = new List<MemoryModule>();
 
         using var searcher = new ManagementObjectSearcher(
-            "SELECT Tag, BankLabel, Capacity, Manufacturer, PartNumber, Speed, MemoryType, SerialNumber, FormFactor FROM Win32_PhysicalMemory");
+            "SELECT Tag, BankLabel, Capacity, Manufacturer, PartNumber, Speed, SMBIOSMemoryType, MemoryType, SerialNumber, FormFactor FROM Win32_PhysicalMemory");
         
         int index = 0;
         foreach (ManagementObject obj in searcher.Get())
         {
-            string bankLabel = obj["BankLabel"]?.ToString() ?? $"Slot {index}";
+            string bankLabel = obj["BankLabel"]?.ToString()?.Trim() ?? "";
+            if (string.IsNullOrWhiteSpace(bankLabel)) bankLabel = $"Slot {index}";
             double capacityBytes = Convert.ToDouble(obj["Capacity"] ?? 0);
             double capacityGib = capacityBytes / (1024.0 * 1024.0 * 1024.0);
             
             string manufacturer = obj["Manufacturer"]?.ToString()?.Trim() ?? "No disponible";
             string partNumber = obj["PartNumber"]?.ToString()?.Trim() ?? "No disponible";
             int speedMHz = Convert.ToInt32(obj["Speed"] ?? 0);
-            int memoryTypeCode = Convert.ToInt32(obj["MemoryType"] ?? 0);
-            string serial = obj["SerialNumber"]?.ToString()?.Trim() ?? "";
+            // SMBIOSMemoryType es el campo fiable en equipos modernos; MemoryType suele venir en 0.
+            int smbiosTypeCode = Convert.ToInt32(obj["SMBIOSMemoryType"] ?? 0);
+            int legacyTypeCode = Convert.ToInt32(obj["MemoryType"] ?? 0);
+            string serial = obj["SerialNumber"]?.ToString()?.Trim() ?? "No disponible";
             int formFactorCode = Convert.ToInt32(obj["FormFactor"] ?? 0);
             // Nota: el identificador de Win32_PhysicalMemory es "Tag", no "DeviceID"
             string wmiTag = obj["Tag"]?.ToString()?.Trim() ?? "";
 
-            string memoryType = MapMemoryType(memoryTypeCode);
+            if (string.IsNullOrWhiteSpace(manufacturer)) manufacturer = "No disponible";
+            if (string.IsNullOrWhiteSpace(partNumber)) partNumber = "No disponible";
+            if (string.IsNullOrWhiteSpace(serial)) serial = "No disponible";
+
+            string memoryType = smbiosTypeCode > 0
+                ? MapMemoryType(smbiosTypeCode)
+                : MapMemoryType(legacyTypeCode);
             string formFactor = MapFormFactor(formFactorCode);
             
             // Speed en WMI está en MHz (frecuencia base), DDR = x2 para MT/s
@@ -104,6 +113,8 @@ public class ModuleService : IModuleService
                     double maxV = MilliVoltsToVolts(physical["MaxVoltage"]);
                     double confV = MilliVoltsToVolts(physical["ConfiguredVoltage"]);
                     string supportedType = smbiosTypeCode > 0 ? MapMemoryType(smbiosTypeCode) : module.MemoryType;
+                    if (supportedType == "No disponible" && module.MemoryType != "No disponible")
+                        supportedType = module.MemoryType;
 
                     // --- Bancos físicos de memoria (arreglos) ---
                     var arrays = new List<(string Tag, double MaxGiB, string Ecc, string Use)>();
@@ -329,7 +340,7 @@ public class ModuleService : IModuleService
             24 => "DDR3",
             26 => "DDR4",
             34 => "DDR5",
-            _ => "Desconocido"
+            _ => "No disponible"
         };
     }
 
@@ -340,7 +351,7 @@ public class ModuleService : IModuleService
             8 => "DIMM",
             12 => "SODIMM",
             13 => "SODIMM",
-            _ => "Desconocido"
+            _ => "No disponible"
         };
     }
 }

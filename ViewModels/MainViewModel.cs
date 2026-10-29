@@ -60,6 +60,17 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private bool _isMonitoring;
 
+    // Sección activa (0 = Monitor, 1 = Módulos, 2 = Diagnóstico, 3 = Reporte, 4 = Acerca de)
+    [ObservableProperty]
+    private int _selectedSectionIndex;
+
+    // Estado del menú hamburguesa lateral (expandido/contraído)
+    [ObservableProperty]
+    private bool _isMenuExpanded = true;
+
+    [RelayCommand]
+    private void ToggleMenu() => IsMenuExpanded = !IsMenuExpanded;
+
     [ObservableProperty]
     private string _diagnosticText = "";
 
@@ -81,7 +92,13 @@ public partial class MainViewModel : ObservableObject
 
     // Tarjetas de memoria para el header
     [ObservableProperty]
-    private MemoryCard[] _memoryCards = Array.Empty<MemoryCard>();
+    private MemoryCard[] _memoryCards =
+    {
+        new("Instalada", 0, "GiB"),
+        new("Utilizable", 0, "GiB"),
+        new("En uso", 0, "GiB"),
+        new("Disponible", 0, "GiB")
+    };
 
     // Opciones para ComboBox de estado de prueba
     public string[] MemoryTestStatusOptions { get; } = new[]
@@ -548,4 +565,8 @@ Para ejecutar el Diagnóstico de memoria de Windows:
 /// <summary>
 /// Modelo simple para las tarjetas de memoria en el header
 /// </summary>
-public record MemoryCard(string Label, double Value, string Unit);
+public record MemoryCard(string Label, double Value, string Unit)
+{
+    public string DisplayValue => Value > 0 ? Value.ToString("F2") : "No disponible";
+    public bool IsAvailable => Value > 0;
+}

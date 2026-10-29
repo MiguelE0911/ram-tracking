@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
         xmlns:local="clr-namespace:RamTracking"
+        xmlns:controls="clr-namespace:RamTracking.Controls"
         xmlns:conv="clr-namespace:RamTracking.Converters"
         xmlns:vm="clr-namespace:RamTracking.ViewModels"
         mc:Ignorable="d"
@@ -22,7 +23,7 @@
         
         <!-- Estilos comunes -->
         <Style x:Key="CardStyle" TargetType="Border">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+			<Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="8"/>
@@ -291,8 +292,8 @@
 
                 <!-- Logo + Nombre -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Border Width="32" Height="32" CornerRadius="4" Margin="0,0,10,0" Background="{DynamicResource PrimaryBrush}">
-                        <TextBlock Text="🧠" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <Border Width="32" Height="32" CornerRadius="4" Margin="0,0,10,0">
+                        <controls:RamEyeLogo HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock Text="Ram Tracking" FontSize="17" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
@@ -802,6 +803,7 @@
                 <Border Style="{StaticResource CardStyle}" Padding="24" Margin="0,4,0,0" Background="{DynamicResource CardBackgroundBrush}">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel MaxWidth="700">
+                            <controls:RamEyeLogo Width="88" Height="88" HorizontalAlignment="Center" Margin="0,4,0,12"/>
                             <TextBlock Text="Acerca de Ram Tracking" Style="{StaticResource SectionHeaderStyle}" FontSize="20" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
                             
                             <Border Background="#E3F2FD" BorderBrush="#2196F3" BorderThickness="1" CornerRadius="6" Padding="16" Margin="0,16,0,0">

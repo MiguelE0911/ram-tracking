@@ -10,6 +10,8 @@ Aplicación de escritorio para **consultar, monitorear y documentar** el estado 
 
 - **Consulta** de memoria instalada, utilizable por Windows, en uso, disponible y porcentaje de utilización.
 - **Módulos de memoria** detectados vía SMBIOS/WMI: banco, capacidad, fabricante, número de parte, tipo (DDR3/DDR4/DDR5), velocidad en MT/s, número de serie y factor de forma.
+- **Detalle por slot**: al seleccionar un módulo se muestra su posición física, la capacidad máxima del banco (SMBIOS), la capacidad estimada por slot, el tipo soportado, los voltajes y la corrección de errores del banco.
+- **Top 10 de programas** con mayor consumo de RAM en tiempo real, con barras relativas al proceso más consumidor.
 - **Monitoreo en tiempo real** cada 2 segundos, con gráfica de las últimas 60 muestras y estadísticas de mínimo, máximo y promedio.
 - **Semáforo de utilización** según los rangos de la práctica:
   - `< 70 %` → verde
@@ -17,7 +19,9 @@ Aplicación de escritorio para **consultar, monitorear y documentar** el estado 
   - `≥ 85 %` → rojo
 - **Diagnóstico** con explicación de la diferencia entre consumo elevado y fallos físicos, instrucciones para `mdsched.exe` y detección automática del resultado en el Visor de eventos.
 - **Reportes** exportables en **TXT** o **CSV** con identificación del equipo, fecha/hora, mediciones, módulos, resumen del monitoreo, estado de la prueba y observaciones.
-- **Tema oscuro** con interfaz en pestañas: Monitor, Módulos, Diagnóstico, Reporte y Acerca de.
+- **Tema oscuro** con **menú hamburguesa lateral comprimible** para navegar entre Monitor, Módulos, Diagnóstico, Reporte y Acerca de.
+- **Animaciones fluidas**: expansión/contracción del menú, transición entre secciones y realimentación visual en botones, semáforo y gráfica.
+- **Datos ausentes explícitos**: cualquier dato no expuesto por WMI/SMBIOS se muestra como **«No disponible»** en lugar de quedar vacío o convertirse en `0`.
 
 ---
 
@@ -90,18 +94,38 @@ bin\Release\net10.0-windows\win-x64\publish\RamTracking.exe
 
 ## Cómo usar la aplicación
 
+### Navegación con el menú hamburguesa
+
+El botón **☰** de la esquina superior izquierda expande o contrae el menú lateral:
+
+- **Expandido (210 px):** muestra iconos y etiquetas de cada sección.
+- **Contraído (62 px):** muestra solo los iconos; cada uno conserva su tooltip.
+- La sección activa se resalta con un indicador verde y el contenido entra con una animación de desvanecimiento y desplazamiento.
+
+Ya no existen pestañas: toda la navegación se realiza desde este menú.
+
 ### Monitor
 
 1. Pulsa **Iniciar monitoreo** en la barra inferior.
 2. La gráfica se actualiza cada 2 segundos y conserva las últimas 60 muestras.
 3. Observa el porcentaje, el color del semáforo y las tarjetas de mínimo, promedio y máximo.
-4. Pulsa **Detener monitoreo** cuando termines.
+4. Revisa el **Top 10 de programas** con mayor consumo de RAM.
+5. Pulsa **Detener monitoreo** cuando termines.
 
-El monitoreo no bloquea la ventana: puedes navegar entre pestañas o generar un reporte mientras está activo.
+El monitoreo no bloquea la ventana: puedes navegar entre secciones o generar un reporte mientras está activo.
 
 ### Módulos
 
-Muestra una fila por cada módulo de memoria detectado. Si el fabricante, el número de parte o la velocidad no están expuestos por el firmware, se muestran como **«No disponible»**; nunca se inventan valores ni se sustituyen por cero.
+Muestra una fila por cada módulo de memoria detectado. El tipo de memoria se obtiene de `SMBIOSMemoryType` (campo fiable en equipos modernos) y, si no está expuesto, de `MemoryType`; por eso la tabla y el panel de detalle muestran la misma generación (por ejemplo, **DDR4**). Si el fabricante, el número de parte, la velocidad u otro dato no están expuestos por el firmware, se muestran como **«No disponible»**; nunca se inventan valores ni se sustituyen por cero.
+
+Al hacer clic en una fila se abre el **panel de detalles del slot** con:
+
+- Posición física (`DeviceLocator`).
+- Capacidad máxima total del banco según SMBIOS y capacidad estimada por slot.
+- Cantidad de slots ocupados del banco.
+- Tipo de RAM soportado y detalle del tipo.
+- Voltajes mínimo, máximo y configurado.
+- Corrección de errores y uso del banco.
 
 ### Diagnóstico
 
@@ -121,7 +145,7 @@ La aplicación **no reinicia el equipo automáticamente**. Puedes:
 
 ### Reporte
 
-Puedes generar el reporte desde la pestaña **Reporte** o con el botón **Generar reporte** de la barra inferior. Se abre un diálogo para elegir ubicación y formato (`.txt` o `.csv`).
+Puedes generar el reporte desde la sección **Reporte** o con el botón **Generar reporte** de la barra inferior. Se abre un diálogo para elegir ubicación y formato (`.txt` o `.csv`).
 
 El reporte incluye:
 
@@ -141,17 +165,21 @@ El proyecto sigue el patrón **MVVM** con inyección de dependencias y servicios
 ```text
 ram-tracking/
 ├── App.xaml / App.xaml.cs          # Arranque, tema y contenedor DI
-├── MainWindow.xaml / .cs           # Ventana principal y composición visual
+├── MainWindow.xaml / .cs           # Ventana principal, menú lateral y animaciones
 ├── RamTracking.csproj
 ├── RamTracking.slnx
+├── Controls/
+│   └── RamEyeLogo.xaml / .cs       # Logo vectorial de la aplicación
 ├── ViewModels/
-│   ├── MainViewModel.cs            # Estado, comandos, gráfica y reporte
+│   ├── MainViewModel.cs            # Estado, sección activa, comandos y gráfica
 │   └── DesignTimeViewModel.cs      # Datos de diseño para el diseñador XAML
 ├── Models/
 │   ├── SystemInfo.cs
 │   ├── MemoryInfo.cs
 │   ├── MemoryModule.cs
+│   ├── MemorySlotDetail.cs
 │   ├── MonitorSample.cs
+│   ├── ProcessMemoryUsage.cs
 │   └── ReportData.cs
 ├── Services/
 │   ├── IMemoryService.cs / MemoryService.cs
@@ -161,7 +189,7 @@ ram-tracking/
 ├── Converters/
 │   ├── BytesToGiBConverter.cs
 │   ├── PercentConverters.cs
-│   └── CustomConverters.cs
+│   └── CustomConverters.cs         # Fallbacks «No disponible», secciones y menú
 ├── Helpers/
 │   └── UnitHelper.cs
 ├── Assets/
@@ -173,9 +201,10 @@ ram-tracking/
 
 1. `App.xaml.cs` construye un `IHost` y registra servicios y `MainViewModel` como singleton/transient.
 2. `MainViewModel` carga la información inicial en paralelo: sistema, memoria y módulos.
-3. `MonitorService` usa un `DispatcherTimer` de 2 segundos, consulta `MemoryService` y emite `SampleReady` y `StatsUpdated`.
-4. El ViewModel actualiza las tarjetas, la gráfica (LiveCharts) y las estadísticas en el hilo de UI.
-5. `ReportService` serializa un `ReportData` a TXT o CSV.
+3. La navegación no usa `TabControl`: `SelectedSectionIndex` determina qué panel de sección es visible e `IsMenuExpanded` controla el ancho del menú (62/210 px). `MainWindow.xaml.cs` anima la apertura del menú y la transición entre secciones.
+4. `MonitorService` usa un `DispatcherTimer` de 2 segundos, consulta `MemoryService` y emite `SampleReady`, `StatsUpdated`, `MemoryInfoReady` y `ProcessesReady`.
+5. El ViewModel actualiza las tarjetas, la gráfica (LiveCharts), el Top 10 y las estadísticas en el hilo de UI.
+6. `ReportService` serializa un `ReportData` a TXT o CSV.
 
 ### Servicios principales
 
@@ -201,16 +230,19 @@ ram-tracking/
 
 - **Unidades:** toda la aplicación usa **GiB** (`1 GiB = 1024³ bytes`). No se mezcla con GB decimales.
 - **Velocidad DDR:** se expresa en **MT/s**, no en MHz. WMI reporta la frecuencia base y el código la multiplica por 2 para obtener la velocidad efectiva de DDR; si el fabricante ya reporta MT/s, este cálculo podría duplicar el valor.
-- **Datos ausentes:** si WMI no expone un dato, la UI muestra **«No disponible»**. No se sustituye por `0`.
+- **Tipo de memoria:** se prioriza `SMBIOSMemoryType` porque `MemoryType` suele devolver `0` en equipos modernos. La tabla y el panel de detalle usan la misma fuente, de modo que ambos muestran la misma generación (DDR4, DDR5, etc.).
+- **Datos ausentes:** si WMI no expone un dato, la UI muestra **«No disponible»**. No se sustituye por `0`. Esto aplica a tarjetas de memoria, estadísticas, gráfica vacía, Top 10, tabla de módulos, detalle por slot y reportes.
+- **Navegación:** se eliminó el `TabControl`; las cinco secciones son paneles independientes y solo se muestra el activo. Toda la navegación se realiza desde el menú hamburguesa.
 - **Errores tolerados:** las consultas WMI y la lectura de eventos capturan excepciones para que la interfaz siga operativa.
-- **Monitoreo vs. diagnóstico:** el porcentaje de uso describe carga de trabajo, no salud física de la RAM. Esta distinción se muestra explícitamente en la pestaña de diagnóstico y en el reporte.
+- **Monitoreo vs. diagnóstico:** el porcentaje de uso describe carga de trabajo, no salud física de la RAM. Esta distinción se muestra explícitamente en la sección de diagnóstico y en el reporte.
 
 ---
 
 ## Limitaciones conocidas
 
 - Solo funciona en **Windows** por dependencia de WPF y WMI.
-- La disponibilidad de datos de módulos depende del firmware/SMBIOS del equipo; en algunas máquinas virtuales o equipos OEM la información puede faltar.
+- La disponibilidad de datos de módulos depende del firmware/SMBIOS del equipo; en algunas máquinas virtuales o equipos OEM la información puede faltar. Si `SMBIOSMemoryType` y `MemoryType` no están expuestos, el tipo se muestra como «No disponible» en la tabla y en el detalle.
+- El panel de detalle usa `Win32_PhysicalMemoryArray`; cuando no es posible asociar un módulo con su banco, se toma el primer banco como respaldo.
 - La detección automática del resultado de `mdsched.exe` depende de que exista el evento `MemoryDiagnostics-Results` en el registro `System` y de los permisos del usuario.
 - La aplicación no incluye todavía una suite de pruebas automatizadas.
 - El cálculo de MT/s a partir de la frecuencia base de WMI puede no ser exacto en todos los equipos.

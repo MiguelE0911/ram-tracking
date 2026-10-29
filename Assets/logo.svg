@@ -1,28 +1,40 @@
-<svg width='64' height='64' viewBox='0 0 64 64' xmlns='http://www.w3.org/2000/svg'>
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id='grad' x1='0%' y1='0%' x2='100%' y2='100%'>
-      <stop offset='0%' style='stop-color:#1976D2;stop-opacity:1' />
-      <stop offset='100%' style='stop-color:#1565C0;stop-opacity:1' />
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1F1F1F;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#0E2A18;stop-opacity:1"/>
     </linearGradient>
   </defs>
-  <rect width='64' height='64' rx='12' fill='url(#grad)'/>
-  <g transform='translate(32, 32)'>
-    <!-- Chip RAM estilizado -->
-    <rect x='-18' y='-14' width='36' height='28' rx='3' fill='white' opacity='0.9'/>
-    <rect x='-14' y='-10' width='8' height='8' rx='1' fill='#1976D2'/>
-    <rect x='-4' y='-10' width='8' height='8' rx='1' fill='#1976D2'/>
-    <rect x='6' y='-10' width='8' height='8' rx='1' fill='#1976D2'/>
-    <rect x='16' y='-10' width='8' height='8' rx='1' fill='#1976D2'/>
-    <rect x='-14' y='4' width='8' height='8' rx='1' fill='#1976D2'/>
-    <rect x='-4' y='4' width='8' height='8' rx='1' fill='#1976D2'/>
-    <rect x='6' y='4' width='8' height='8' rx='1' fill='#1976D2'/>
-    <rect x='16' y='4' width='8' height='8' rx='1' fill='#1976D2'/>
+  <rect width="64" height="64" rx="12" fill="url(#bgGrad)"/>
+  <!-- Módulo RAM con ojo (logo Ram Tracking) -->
+  <g transform="translate(8, 16)">
+    <!-- Placa del módulo -->
+    <rect x="0" y="0" width="48" height="14" rx="2" fill="#14532D" stroke="#22C55E" stroke-width="1.5"/>
+    <!-- Pistas del circuito -->
+    <rect x="3" y="5" width="3" height="6" fill="#2FBF71" opacity="0.35"/>
+    <rect x="34" y="5" width="3" height="6" fill="#2FBF71" opacity="0.35"/>
+    <!-- Chips de memoria -->
+    <rect x="5" y="3" width="8" height="6" rx="1" fill="#1E293B" stroke="#4ADE80" stroke-width="0.8"/>
+    <rect x="27" y="3" width="8" height="6" rx="1" fill="#1E293B" stroke="#4ADE80" stroke-width="0.8"/>
+    <!-- Ojo -->
+    <ellipse cx="15" cy="6.5" rx="5" ry="3.5" fill="#E5E5E5"/>
+    <circle cx="15" cy="6.5" r="2.2" fill="#22C55E"/>
+    <circle cx="15" cy="6.5" r="1" fill="#101010"/>
+    <circle cx="15.9" cy="5.6" r="0.45" fill="#FFFFFF"/>
     <!-- Contactos dorados -->
-    <g stroke='#FFD700' stroke-width='1.5'>
-      <line x1='-18' y1='-14' x2='18' y2='-14'/>
-      <line x1='-18' y1='14' x2='18' y2='14'/>
+    <g fill="#C8963E">
+      <rect x="2" y="12.5" width="1.8" height="4.5"/>
+      <rect x="5.11" y="12.5" width="1.8" height="4.5"/>
+      <rect x="8.22" y="12.5" width="1.8" height="4.5"/>
+      <rect x="11.33" y="12.5" width="1.8" height="4.5"/>
+      <rect x="14.44" y="12.5" width="1.8" height="4.5"/>
+      <rect x="17.55" y="12.5" width="1.8" height="4.5"/>
+      <rect x="20.66" y="12.5" width="1.8" height="4.5"/>
+      <rect x="23.77" y="12.5" width="1.8" height="4.5"/>
+      <rect x="26.88" y="12.5" width="1.8" height="4.5"/>
+      <rect x="29.99" y="12.5" width="1.8" height="4.5"/>
+      <rect x="33.1" y="12.5" width="1.8" height="4.5"/>
+      <rect x="36.21" y="12.5" width="1.8" height="4.5"/>
     </g>
-    <!-- Línea de gráfico ascendente -->
-    <polyline points='-24,18 -12,6 0,12 12,-6 24,-18' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' opacity='0.9'/>
   </g>
 </svg>

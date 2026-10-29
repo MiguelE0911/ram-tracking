@@ -17,7 +17,20 @@ public record MemoryModule(
 )
 {
     public static MemoryModule Unknown(string bankLabel) => new(
-        bankLabel, 0, "No disponible", "No disponible", "Desconocido", 0);
+        bankLabel, 0, "No disponible", "No disponible", "No disponible", 0);
 
     public bool HasValidData => CapacityGiB > 0;
+
+    // Propiedades de presentación: garantizan que la UI nunca muestre celdas vacías
+    public string BankDisplay => Fallback(BankLabel);
+    public string CapacityDisplay => CapacityGiB > 0 ? $"{CapacityGiB:F2} GiB" : "No disponible";
+    public string ManufacturerDisplay => Fallback(Manufacturer);
+    public string PartNumberDisplay => Fallback(PartNumber);
+    public string MemoryTypeDisplay => Fallback(MemoryType);
+    public string SpeedDisplay => ConfiguredSpeedMTs > 0 ? $"{ConfiguredSpeedMTs} MT/s" : "No disponible";
+    public string SerialDisplay => Fallback(SerialNumber);
+    public string FormFactorDisplay => Fallback(FormFactor);
+
+    private static string Fallback(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? "No disponible" : value.Trim();
 }
